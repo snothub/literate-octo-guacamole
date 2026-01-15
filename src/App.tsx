@@ -1,0 +1,405 @@
+import { useState, useEffect } from 'react';
+import { Search, Play, Pause, Music, ExternalLink } from 'lucide-react';
+
+interface Track {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  album: { name: string; images: { url: string }[] };
+  uri: string;
+  preview_url: string | null;
+  external_urls: { spotify: string };
+}
+
+interface SpotifyPlayer {
+  connect: () => Promise<boolean>;
+  disconnect: () => void;
+  togglePlay: () => Promise<void>;
+  resume: () => Promise<void>;
+  pause: () => Promise<void>;
+  getCurrentState: () => Promise<unknown>;
+  addListener: (event: string, callback: (state: unknown) => void) => void;
+}
+
+declare global {
+  interface Window {
+    onSpotifyWebPlaybackSDKReady: () => void;
+    Spotify: {
+      Player: new (config: {
+        name: string;
+        getOAuthToken: (cb: (token: string) => void) => void;
+        volume: number;
+      }) => SpotifyPlayer;
+    };
+  }
+}
+
+// Replace with your Spotify Client ID
+const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '011c5f27eef64dd0b6f65ca673215a58';
+const REDIRECT_URI = window.location.origin;
+const SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state';
+
+// PKCE helpers
+const generateRandomString = (length: number): string => {
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const values = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(values).map((x) => possible[x % possible.length]).join('');
+};
+
+const sha256 = async (plain: string): Promise<ArrayBuffer> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  return crypto.subtle.digest('SHA-256', data);
+};
+
+const base64encode = (input: ArrayBuffer): string => {
+  return btoa(String.fromCharCode(...new Uint8Array(input)))
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+};
+
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+export default function App() {
+  const [token, setToken] = useState<string>('');
+  const [query, setQuery] = useState<string>('');
+  const [results, setResults] = useState<Track[]>([]);
+  const [selected, setSelected] = useState<Track | null>(null);
+  const [playing, setPlaying] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [player, setPlayer] = useState<SpotifyPlayer | null>(null);
+  const [deviceId, setDeviceId] = useState<string>('');
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [usingPreview, setUsingPreview] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+
+  useEffect(() => {
+    // Check for authorization code in URL (PKCE flow)
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    if (code) {
+      const codeVerifier = localStorage.getItem('code_verifier');
+      if (codeVerifier) {
+        exchangeCodeForToken(code, codeVerifier);
+      }
+    } else {
+      // Check if we already have a token in localStorage
+      const storedToken = localStorage.getItem('spotify_token');
+      if (storedToken) {
+        setToken(storedToken);
+      }
+    }
+  }, []);
+
+  const exchangeCodeForToken = async (code: string, codeVerifier: string) => {
+    try {
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: CLIENT_ID,
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: REDIRECT_URI,
+          code_verifier: codeVerifier,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to exchange code for token');
+      }
+
+      const data = await response.json();
+      setToken(data.access_token);
+      localStorage.setItem('spotify_token', data.access_token);
+      localStorage.removeItem('code_verifier');
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch (err) {
+      setError('Authentication failed. Please try again.');
+      localStorage.removeItem('code_verifier');
+    }
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    
+    const script = document.createElement('script');
+    script.src = 'https://sdk.scdn.co/spotify-player.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const p = new window.Spotify.Player({
+        name: 'Spotify Search App',
+        getOAuthToken: cb => cb(token),
+        volume: 0.5
+      });
+
+      p.addListener('ready', (state: unknown) => {
+        const { device_id } = state as { device_id: string };
+        setDeviceId(device_id);
+      });
+
+      p.addListener('player_state_changed', (state: unknown) => {
+        if (state) {
+          const { paused, position, duration } = state as { paused: boolean; position: number; duration: number };
+          setPlaying(!paused);
+          setCurrentTime(position / 1000);
+          setDuration(duration / 1000);
+        }
+      });
+
+      p.connect();
+      setPlayer(p);
+    };
+
+    return () => {
+      player?.disconnect();
+    };
+  }, [token]);
+
+  // Track progress for preview playback
+  useEffect(() => {
+    if (!audio || !usingPreview || !playing) return;
+
+    const updateProgress = () => {
+      setCurrentTime(audio.currentTime);
+      setDuration(audio.duration || 30);
+    };
+
+    updateProgress();
+    const interval = setInterval(updateProgress, 100);
+
+    return () => clearInterval(interval);
+  }, [audio, usingPreview, playing]);
+
+  const login = async () => {
+    const codeVerifier = generateRandomString(64);
+    const hashed = await sha256(codeVerifier);
+    const codeChallenge = base64encode(hashed);
+
+    localStorage.setItem('code_verifier', codeVerifier);
+
+    const authUrl = new URL('https://accounts.spotify.com/authorize');
+    authUrl.searchParams.append('client_id', CLIENT_ID);
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
+    authUrl.searchParams.append('scope', SCOPES);
+    authUrl.searchParams.append('code_challenge_method', 'S256');
+    authUrl.searchParams.append('code_challenge', codeChallenge);
+
+    window.location.href = authUrl.toString();
+  };
+
+  const search = async () => {
+    if (!query.trim() || !token) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error('Search failed');
+      const data = await res.json();
+      setResults(data.tracks.items);
+    } catch {
+      setError('Search failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectTrack = (track: Track) => {
+    if (audio) {
+      audio.pause();
+      setAudio(null);
+    }
+    setSelected(track);
+    setPlaying(false);
+    setUsingPreview(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setResults([]);
+    setQuery('');
+  };
+
+  const playWithSDK = async () => {
+    if (!selected || !deviceId) return;
+    try {
+      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uris: [selected.uri] })
+      });
+      setPlaying(true);
+      setUsingPreview(false);
+    } catch {
+      if (selected.preview_url) playPreview();
+      else setError('Playback failed. Premium required for full playback.');
+    }
+  };
+
+  const playPreview = () => {
+    if (!selected?.preview_url) return;
+    const a = new Audio(selected.preview_url);
+    a.play();
+    a.onended = () => setPlaying(false);
+    setAudio(a);
+    setPlaying(true);
+    setUsingPreview(true);
+  };
+
+  const togglePlay = async () => {
+    if (!selected) return;
+    if (playing) {
+      if (usingPreview && audio) audio.pause();
+      else await player?.pause();
+      setPlaying(false);
+    } else {
+      if (usingPreview && audio) {
+        audio.play();
+        setPlaying(true);
+      } else if (deviceId) {
+        await playWithSDK();
+      } else if (selected.preview_url) {
+        playPreview();
+      } else {
+        setError('No playback available');
+      }
+    }
+  };
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Music className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-white mb-2">Spotify Search & Play</h1>
+          <p className="text-gray-400 mb-6">Connect your Spotify account to search and play music</p>
+          <button onClick={login} className="bg-green-500 hover:bg-green-400 text-black font-semibold py-3 px-8 rounded-full transition-all">
+            Connect with Spotify
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-32">
+      <div className="max-w-xl mx-auto pt-12">
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <Music className="w-8 h-8 text-green-500" />
+          <h1 className="text-2xl font-bold text-white">Spotify Search</h1>
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && search()}
+            placeholder="Search for a song..."
+            className="flex-1 bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-700 focus:border-green-500 focus:outline-none"
+          />
+          <button onClick={search} disabled={loading} className="bg-green-500 hover:bg-green-400 text-black p-3 rounded-lg transition-all disabled:opacity-50">
+            <Search className="w-6 h-6" />
+          </button>
+        </div>
+
+        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+
+        {results.length > 0 && (
+          <div className="bg-gray-800/50 rounded-lg overflow-hidden mb-4 max-h-80 overflow-y-auto">
+            {results.map(track => (
+              <button key={track.id} onClick={() => selectTrack(track)} className="w-full flex items-center gap-3 p-3 hover:bg-gray-700/50 transition-all text-left">
+                <img src={track.album.images[2]?.url || track.album.images[0]?.url} alt="" className="w-12 h-12 rounded" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-medium truncate">{track.name}</p>
+                  <p className="text-gray-400 text-sm truncate">{track.artists.map(a => a.name).join(', ')}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {selected && (
+          <div className="bg-gray-800/80 rounded-xl p-6 text-center">
+            <img src={selected.album.images[0]?.url} alt="" className="w-48 h-48 rounded-lg mx-auto mb-4 shadow-xl" />
+            <h2 className="text-xl font-bold text-white mb-1">{selected.name}</h2>
+            <p className="text-gray-400 mb-1">{selected.artists.map(a => a.name).join(', ')}</p>
+            <p className="text-gray-500 text-sm mb-4">{selected.album.name}</p>
+            
+            <div className="flex items-center justify-center gap-4">
+              <button onClick={togglePlay} className="bg-green-500 hover:bg-green-400 text-black p-4 rounded-full transition-all hover:scale-105">
+                {playing ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+              </button>
+              <a href={selected.external_urls.spotify} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-green-500 transition-all">
+                <ExternalLink className="w-6 h-6" />
+              </a>
+            </div>
+            
+            {usingPreview && <p className="text-gray-500 text-xs mt-3">Playing 30s preview</p>}
+            {!deviceId && !selected.preview_url && <p className="text-yellow-500 text-xs mt-3">Premium required for playback</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Play Bar */}
+      {selected && playing && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800 p-4 shadow-2xl">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-4 mb-2">
+              <img
+                src={selected.album.images[2]?.url || selected.album.images[0]?.url}
+                alt=""
+                className="w-14 h-14 rounded shadow-lg"
+              />
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white font-semibold truncate">{selected.name}</h3>
+                <p className="text-gray-400 text-sm truncate">
+                  {selected.artists.map(a => a.name).join(', ')}
+                </p>
+              </div>
+              <button
+                onClick={togglePlay}
+                className="bg-green-500 hover:bg-green-400 text-black p-3 rounded-full transition-all hover:scale-105"
+              >
+                {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-gray-400 text-xs min-w-[40px]">
+                {formatTime(currentTime)}
+              </span>
+              <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 transition-all duration-100"
+                  style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                />
+              </div>
+              <span className="text-gray-400 text-xs min-w-[40px]">
+                {formatTime(duration)}
+              </span>
+            </div>
+
+            {usingPreview && (
+              <p className="text-gray-500 text-xs text-center mt-2">Playing 30s preview</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
