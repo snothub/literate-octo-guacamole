@@ -91,8 +91,15 @@ export default function App() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
+  const [bpm, setBpm] = useState<number | null>(null);
+  const [magnifier, setMagnifier] = useState<{ leftPercent: number; timeSec: number; visible: boolean }>({
+    leftPercent: 0,
+    timeSec: 0,
+    visible: false,
+  });
   const progressInterval = useRef<number | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const magnifierTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     // Check for authorization code in URL (PKCE flow)
@@ -316,6 +323,7 @@ export default function App() {
   };
 
   const togglePlay = async () => {
+    void ensureAudioContextReady();
     if (!selected) return;
     if (playing) {
       if (usingPreview && audio) audio.pause();
@@ -363,15 +371,31 @@ export default function App() {
     }
   };
 
+  const showMagnifier = (clientX: number) => {
+    if (!progressBarRef.current || !duration) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const seekPos = percent * duration;
+    const timeSec = Math.floor(seekPos / 1000);
+
+    setMagnifier({ leftPercent: percent * 100, timeSec, visible: true });
+    if (magnifierTimeout.current) window.clearTimeout(magnifierTimeout.current);
+    magnifierTimeout.current = window.setTimeout(() => {
+      setMagnifier(prev => ({ ...prev, visible: false }));
+    }, 1200);
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
     seekToPosition(e.clientX);
+    showMagnifier(e.clientX);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging) {
       seekToPosition(e.clientX);
+      showMagnifier(e.clientX);
     }
   };
 
@@ -393,6 +417,13 @@ export default function App() {
       };
     }
   }, [isDragging, duration, usingPreview, audio, player, selected]);
+
+  useEffect(() => {
+    return () => {
+      if (magnifierTimeout.current) window.clearTimeout(magnifierTimeout.current);
+    };
+  }, []);
+
 
   if (!token) {
     return (
@@ -513,9 +544,17 @@ export default function App() {
                 <span className="text-gray-400 text-xs min-w-[40px] text-right">{formatTime(progress)}</span>
                 <div
                   ref={progressBarRef}
-                  className={`flex-1 h-1.5 bg-gray-700 rounded-full group select-none relative ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
+                  className={`flex-1 h-3 bg-gray-700 rounded-full group select-none relative ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
                   onMouseDown={handleMouseDown}
                 >
+                  {magnifier.visible && (
+                    <div
+                      className="absolute -top-12 -translate-x-1/2 w-16 h-16 rounded-full bg-white/10 border border-white/30 text-white text-sm font-semibold flex items-center justify-center backdrop-blur-sm shadow-lg"
+                      style={{ left: `${magnifier.leftPercent}%` }}
+                    >
+                      {magnifier.timeSec}s
+                    </div>
+                  )}
                   {/* Loop region indicator */}
                   {loopStart !== null && loopEnd !== null && loopStart < loopEnd && (
                     <div
@@ -532,13 +571,13 @@ export default function App() {
                     className="h-full bg-green-500 rounded-full relative group-hover:bg-green-400 transition-colors"
                     style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
                   >
-                    <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
+                    <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
                   </div>
 
                   {/* Loop start marker */}
                   {loopStart !== null && (
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-400 rounded-full border border-yellow-600"
+                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-yellow-400 rounded-full border border-yellow-600"
                       style={{ left: `${(loopStart / duration) * 100}%` }}
                     />
                   )}
@@ -546,7 +585,7 @@ export default function App() {
                   {/* Loop end marker */}
                   {loopEnd !== null && (
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-400 rounded-full border border-yellow-600"
+                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-yellow-400 rounded-full border border-yellow-600"
                       style={{ left: `${(loopEnd / duration) * 100}%` }}
                     />
                   )}
