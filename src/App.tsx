@@ -89,6 +89,7 @@ export default function App() {
   const [progress, setProgress] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [draggingMarker, setDraggingMarker] = useState<'start' | 'end' | null>(null);
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
   const [loopEnabled, setLoopEnabled] = useState<boolean>(false);
@@ -344,11 +345,21 @@ export default function App() {
   };
 
   const setLoopStartPoint = () => {
-    setLoopStart(progress);
+    // Constrain to not go beyond end marker
+    if (loopEnd !== null && progress > loopEnd) {
+      setLoopStart(loopEnd);
+    } else {
+      setLoopStart(progress);
+    }
   };
 
   const setLoopEndPoint = () => {
-    setLoopEnd(progress);
+    // Constrain to not go before start marker
+    if (loopStart !== null && progress < loopStart) {
+      setLoopEnd(loopStart);
+    } else {
+      setLoopEnd(progress);
+    }
   };
 
   const clearLoop = () => {
@@ -382,7 +393,12 @@ export default function App() {
     }
     const ms = parseTimeInput(value);
     if (ms !== null && ms >= 0 && ms <= duration) {
-      setLoopStart(ms);
+      // Constrain to not go beyond end marker
+      if (loopEnd !== null && ms > loopEnd) {
+        setLoopStart(loopEnd);
+      } else {
+        setLoopStart(ms);
+      }
     }
   };
 
@@ -394,7 +410,12 @@ export default function App() {
     }
     const ms = parseTimeInput(value);
     if (ms !== null && ms >= 0 && ms <= duration) {
-      setLoopEnd(ms);
+      // Constrain to not go before start marker
+      if (loopStart !== null && ms < loopStart) {
+        setLoopEnd(loopStart);
+      } else {
+        setLoopEnd(ms);
+      }
     }
   };
 
@@ -438,16 +459,43 @@ export default function App() {
     if (isDragging) {
       seekToPosition(e.clientX);
       showMagnifier(e.clientX);
+    } else if (draggingMarker && progressBarRef.current) {
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const newPos = percent * duration;
+
+      if (draggingMarker === 'start') {
+        // Constrain start to not go beyond end
+        if (loopEnd !== null) {
+          setLoopStart(Math.min(newPos, loopEnd));
+        } else {
+          setLoopStart(newPos);
+        }
+      } else if (draggingMarker === 'end') {
+        // Constrain end to not go before start
+        if (loopStart !== null) {
+          setLoopEnd(Math.max(newPos, loopStart));
+        } else {
+          setLoopEnd(newPos);
+        }
+      }
     }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setDraggingMarker(null);
+  };
+
+  const handleMarkerMouseDown = (e: React.MouseEvent, marker: 'start' | 'end') => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDraggingMarker(marker);
   };
 
   // Handle global mouse events when dragging
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || draggingMarker) {
       document.body.style.userSelect = 'none';
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
@@ -458,7 +506,7 @@ export default function App() {
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, duration, usingPreview, audio, player, selected]);
+  }, [isDragging, draggingMarker, duration, usingPreview, audio, player, selected]);
 
   useEffect(() => {
     return () => {
@@ -546,10 +594,10 @@ export default function App() {
             <div className="bg-gray-800/80 rounded-lg p-4 sticky top-12">
               <h3 className="text-lg font-bold text-white mb-4">Loop Controls</h3>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Start Time */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-gray-300 w-20 flex-shrink-0">
                     Start Time
                   </label>
                   <input
@@ -557,13 +605,13 @@ export default function App() {
                     value={formatTimeInput(loopStart)}
                     onChange={handleLoopStartChange}
                     placeholder="0:00"
-                    className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+                    className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
                   />
                 </div>
 
                 {/* End Time */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-gray-300 w-20 flex-shrink-0">
                     End Time
                   </label>
                   <input
@@ -571,7 +619,7 @@ export default function App() {
                     value={formatTimeInput(loopEnd)}
                     onChange={handleLoopEndChange}
                     placeholder="0:00"
-                    className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+                    className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
                   />
                 </div>
 
@@ -661,7 +709,7 @@ export default function App() {
               </div>
 
               {/* Progress Bar */}
-              <div className="flex items-center gap-3 w-full max-w-[80vw]">
+              <div className="flex items-center gap-3 w-full max-w-[80vw] pt-12">
                 <span className="text-gray-400 text-xs min-w-[40px] text-right">{formatTime(progress)}</span>
                 <div
                   ref={progressBarRef}
@@ -695,20 +743,48 @@ export default function App() {
                     <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
                   </div>
 
-                  {/* Loop start marker */}
+                  {/* Loop start marker - above progress bar */}
                   {loopStart !== null && (
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-yellow-400 rounded-full border border-yellow-600"
+                      className="absolute -top-12 -translate-x-1/2"
                       style={{ left: `${(loopStart / duration) * 100}%` }}
-                    />
+                    >
+                      {/* Label */}
+                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-semibold text-yellow-400 whitespace-nowrap">
+                        Start
+                      </div>
+                      {/* Vertical line */}
+                      <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-yellow-400 top-0" />
+                      {/* Draggable marker */}
+                      <div
+                        onMouseDown={(e) => handleMarkerMouseDown(e, 'start')}
+                        className={`w-5 h-5 bg-yellow-400 rounded-full border-2 border-yellow-600 shadow-lg transition-transform flex items-center justify-center text-xs font-bold text-gray-900 ${draggingMarker === 'start' ? 'scale-125 cursor-grabbing' : 'cursor-grab hover:scale-110'}`}
+                      >
+                        S
+                      </div>
+                    </div>
                   )}
 
-                  {/* Loop end marker */}
+                  {/* Loop end marker - above progress bar */}
                   {loopEnd !== null && (
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-yellow-400 rounded-full border border-yellow-600"
+                      className="absolute -top-12 -translate-x-1/2"
                       style={{ left: `${(loopEnd / duration) * 100}%` }}
-                    />
+                    >
+                      {/* Label */}
+                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-semibold text-yellow-400 whitespace-nowrap">
+                        End
+                      </div>
+                      {/* Vertical line */}
+                      <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 bg-yellow-400 top-0" />
+                      {/* Draggable marker */}
+                      <div
+                        onMouseDown={(e) => handleMarkerMouseDown(e, 'end')}
+                        className={`w-5 h-5 bg-yellow-400 rounded-full border-2 border-yellow-600 shadow-lg transition-transform flex items-center justify-center text-xs font-bold text-gray-900 ${draggingMarker === 'end' ? 'scale-125 cursor-grabbing' : 'cursor-grab hover:scale-110'}`}
+                      >
+                        E
+                      </div>
+                    </div>
                   )}
                 </div>
                 <span className="text-gray-400 text-xs min-w-[40px]">{formatTime(duration)}</span>
