@@ -766,7 +766,7 @@ export default function App() {
           {lyrics.length > 0 && (
             <div
               ref={lyricsContainerRef}
-              className="max-w-4xl mx-auto px-4 py-3 h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
+              className="max-w-4xl mx-auto px-4 py-3 h-32 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-900 scrollbar-track-transparent"
             >
               <div className="space-y-2">
                 {lyrics.map((line, index) => {
@@ -775,7 +775,7 @@ export default function App() {
                   return (
                     <p
                       key={index}
-                      className={`text-center transition-all duration-300 ${
+                      className={`text-center transition-all duration-300 break-words ${
                         isCurrentLine
                           ? 'text-white font-semibold text-lg scale-105'
                           : 'text-gray-500 text-sm'
