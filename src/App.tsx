@@ -12,6 +12,11 @@ interface Track {
   duration_ms: number;
 }
 
+interface LyricLine {
+  time: number; // milliseconds
+  text: string;
+}
+
 interface SpotifyPlayer {
   connect: () => Promise<boolean>;
   disconnect: () => void;
@@ -93,6 +98,8 @@ export default function App() {
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
   const [loopEnabled, setLoopEnabled] = useState<boolean>(false);
+  const [lyrics, setLyrics] = useState<LyricLine[]>([]);
+  const [lyricsLoading, setLyricsLoading] = useState<boolean>(false);
   const [magnifier, setMagnifier] = useState<{ leftPercent: number; timeSec: number; visible: boolean }>({
     leftPercent: 0,
     timeSec: 0,
@@ -101,6 +108,7 @@ export default function App() {
   const progressInterval = useRef<number | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const magnifierTimeout = useRef<number | null>(null);
+  const lyricsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check for authorization code in URL (PKCE flow)
@@ -243,6 +251,33 @@ export default function App() {
     }
   }, [progress, playing, loopEnabled, loopStart, loopEnd, usingPreview, audio, player]);
 
+  // Auto-scroll lyrics to keep current line centered
+  useEffect(() => {
+    if (!lyricsContainerRef.current || lyrics.length === 0) return;
+
+    const currentIndex = lyrics.findIndex((line, index) => {
+      return progress >= line.time && (index === lyrics.length - 1 || progress < lyrics[index + 1]?.time);
+    });
+
+    if (currentIndex !== -1) {
+      const container = lyricsContainerRef.current;
+      const lineElements = container.querySelectorAll('p');
+      const currentElement = lineElements[currentIndex];
+
+      if (currentElement) {
+        const containerHeight = container.clientHeight;
+        const elementTop = currentElement.offsetTop;
+        const elementHeight = currentElement.clientHeight;
+        const scrollPosition = elementTop - (containerHeight / 2) + (elementHeight / 2);
+
+        container.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [progress, lyrics]);
+
   const login = async () => {
     const codeVerifier = generateRandomString(64);
     const hashed = await sha256(codeVerifier);
@@ -295,6 +330,10 @@ export default function App() {
     setLoopEnabled(false);
     setResults([]);
     setQuery('');
+
+    // Fetch lyrics for the selected track
+    const artistName = track.artists[0]?.name || '';
+    fetchLyrics(track.name, artistName);
   };
 
   const playWithSDK = async () => {
@@ -366,6 +405,57 @@ export default function App() {
     setLoopStart(null);
     setLoopEnd(null);
     setLoopEnabled(false);
+  };
+
+  const parseLRC = (lrcText: string): LyricLine[] => {
+    const lines: LyricLine[] = [];
+    const lrcLines = lrcText.split('\n');
+
+    for (const line of lrcLines) {
+      // Match timestamp format [mm:ss.xx]
+      const match = line.match(/\[(\d{2}):(\d{2}\.\d{2})\](.*)/);
+      if (match) {
+        const minutes = parseInt(match[1]);
+        const seconds = parseFloat(match[2]);
+        const text = match[3].trim();
+        const timeMs = (minutes * 60 + seconds) * 1000;
+
+        if (text) { // Only add lines with text
+          lines.push({ time: timeMs, text });
+        }
+      }
+    }
+
+    return lines.sort((a, b) => a.time - b.time);
+  };
+
+  const fetchLyrics = async (trackName: string, artistName: string) => {
+    setLyricsLoading(true);
+    setLyrics([]);
+
+    try {
+      const response = await fetch(
+        `https://lrclib.net/api/search?track_name=${encodeURIComponent(trackName)}&artist_name=${encodeURIComponent(artistName)}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch lyrics');
+      }
+
+      const data = await response.json();
+
+      if (data && data.length > 0 && data[0].syncedLyrics) {
+        const parsedLyrics = parseLRC(data[0].syncedLyrics);
+        setLyrics(parsedLyrics);
+      } else {
+        setLyrics([]);
+      }
+    } catch (err) {
+      console.error('Error fetching lyrics:', err);
+      setLyrics([]);
+    } finally {
+      setLyricsLoading(false);
+    }
   };
 
   const formatTimeInput = (ms: number | null): string => {
@@ -672,6 +762,43 @@ export default function App() {
       {/* Play Bar */}
       {selected && (
         <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800">
+          {/* Lyrics Display */}
+          {lyrics.length > 0 && (
+            <div
+              ref={lyricsContainerRef}
+              className="max-w-4xl mx-auto px-4 py-3 h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
+            >
+              <div className="space-y-2">
+                {lyrics.map((line, index) => {
+                  const isCurrentLine = progress >= line.time && (index === lyrics.length - 1 || progress < lyrics[index + 1]?.time);
+
+                  return (
+                    <p
+                      key={index}
+                      className={`text-center transition-all duration-300 ${
+                        isCurrentLine
+                          ? 'text-white font-semibold text-lg scale-105'
+                          : 'text-gray-500 text-sm'
+                      }`}
+                    >
+                      {line.text}
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {lyricsLoading && (
+            <div className="max-w-4xl mx-auto px-4 py-3 h-32 flex items-center justify-center">
+              <p className="text-gray-400 text-sm">Loading lyrics...</p>
+            </div>
+          )}
+          {!lyricsLoading && lyrics.length === 0 && selected && (
+            <div className="max-w-4xl mx-auto px-4 py-3 h-32 flex items-center justify-center">
+              <p className="text-gray-500 text-sm">No synced lyrics available</p>
+            </div>
+          )}
+
           <div className="mx-auto px-4 py-3">
             <div className="flex items-center justify-center gap-4">
               {/* Play Button */}

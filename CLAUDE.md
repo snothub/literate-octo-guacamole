@@ -73,9 +73,35 @@ All state is managed in the main App component using React hooks:
 - `audio`: HTMLAudioElement reference for preview playback
 
 ### API Integration
-- Search: `GET https://api.spotify.com/v1/search?q=<query>&type=track&limit=10`
-- Playback: `PUT https://api.spotify.com/v1/me/player/play?device_id=<device_id>`
-- All requests require `Authorization: Bearer <token>` header
+- **Spotify API**:
+  - Search: `GET https://api.spotify.com/v1/search?q=<query>&type=track&limit=10`
+  - Playback: `PUT https://api.spotify.com/v1/me/player/play?device_id=<device_id>`
+  - All requests require `Authorization: Bearer <token>` header
+- **LRCLIB API** (lyrics):
+  - Endpoint: `GET https://lrclib.net/api/search?track_name=<track>&artist_name=<artist>`
+  - Free API, no authentication required
+  - Returns synced lyrics in LRC format with timestamps
+
+### Lyrics Feature
+The app fetches and displays synchronized lyrics from LRCLIB:
+- Automatically fetches lyrics when a track is selected
+- Parses LRC format (`[mm:ss.xx]Lyric text`) into timed lines
+- Displays lyrics above the progress bar in play bar area
+- Current line is highlighted in white/larger font as song plays
+- Auto-scrolls to keep current line centered
+- Shows "Loading lyrics..." during fetch
+- Shows "No synced lyrics available" when lyrics aren't found
+- Not all songs have synced lyrics in the LRCLIB database
+
+### Loop Feature
+Users can define and repeat specific segments of a song:
+- Click start/end buttons while playing to set loop points at current position
+- Drag yellow markers above progress bar to adjust loop boundaries
+- Start marker cannot be dragged beyond end marker (and vice versa)
+- Loop points displayed in right panel with editable time inputs (MM:SS format)
+- Checkbox to enable/disable looping (off by default)
+- When enabled and both points are set, playback automatically jumps from end to start
+- Works with both SDK and preview playback modes
 
 ## Configuration
 
