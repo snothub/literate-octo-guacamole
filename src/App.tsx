@@ -91,7 +91,6 @@ export default function App() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
-  const [bpm, setBpm] = useState<number | null>(null);
   const [magnifier, setMagnifier] = useState<{ leftPercent: number; timeSec: number; visible: boolean }>({
     leftPercent: 0,
     timeSec: 0,
@@ -323,7 +322,6 @@ export default function App() {
   };
 
   const togglePlay = async () => {
-    void ensureAudioContextReady();
     if (!selected) return;
     if (playing) {
       if (usingPreview && audio) audio.pause();
