@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Play, Pause, Music, ExternalLink } from 'lucide-react';
 
 interface Track {
@@ -9,6 +9,7 @@ interface Track {
   uri: string;
   preview_url: string | null;
   external_urls: { spotify: string };
+  duration_ms: number;
 }
 
 interface SpotifyPlayer {
@@ -17,8 +18,16 @@ interface SpotifyPlayer {
   togglePlay: () => Promise<void>;
   resume: () => Promise<void>;
   pause: () => Promise<void>;
-  getCurrentState: () => Promise<unknown>;
+  seek: (position_ms: number) => Promise<void>;
+  getCurrentState: () => Promise<SpotifyState | null>;
   addListener: (event: string, callback: (state: unknown) => void) => void;
+}
+
+interface SpotifyState {
+  paused: boolean;
+  position: number;
+  duration: number;
+  track_window: { current_track: { id: string } };
 }
 
 declare global {
@@ -34,10 +43,16 @@ declare global {
   }
 }
 
-// Replace with your Spotify Client ID
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '011c5f27eef64dd0b6f65ca673215a58';
 const REDIRECT_URI = window.location.origin;
 const SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state';
+
+const formatTime = (ms: number): string => {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+};
 
 // PKCE helpers
 const generateRandomString = (length: number): string => {
@@ -59,12 +74,6 @@ const base64encode = (input: ArrayBuffer): string => {
     .replace(/\//g, '_');
 };
 
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
-
 export default function App() {
   const [token, setToken] = useState<string>('');
   const [query, setQuery] = useState<string>('');
@@ -77,8 +86,11 @@ export default function App() {
   const [deviceId, setDeviceId] = useState<string>('');
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [usingPreview, setUsingPreview] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [progress, setProgress] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const progressInterval = useRef<number | null>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check for authorization code in URL (PKCE flow)
@@ -152,10 +164,10 @@ export default function App() {
 
       p.addListener('player_state_changed', (state: unknown) => {
         if (state) {
-          const { paused, position, duration } = state as { paused: boolean; position: number; duration: number };
-          setPlaying(!paused);
-          setCurrentTime(position / 1000);
-          setDuration(duration / 1000);
+          const s = state as SpotifyState;
+          setPlaying(!s.paused);
+          setProgress(s.position);
+          setDuration(s.duration);
         }
       });
 
@@ -165,23 +177,46 @@ export default function App() {
 
     return () => {
       player?.disconnect();
+      if (progressInterval.current) clearInterval(progressInterval.current);
     };
   }, [token]);
 
-  // Track progress for preview playback
+  // Progress tracking for SDK
   useEffect(() => {
-    if (!audio || !usingPreview || !playing) return;
-
-    const updateProgress = () => {
-      setCurrentTime(audio.currentTime);
-      setDuration(audio.duration || 30);
+    if (progressInterval.current) clearInterval(progressInterval.current);
+    
+    if (playing && !usingPreview && player) {
+      progressInterval.current = window.setInterval(async () => {
+        const state = await player.getCurrentState();
+        if (state) {
+          setProgress(state.position);
+          setDuration(state.duration);
+        }
+      }, 500);
+    }
+    
+    return () => {
+      if (progressInterval.current) clearInterval(progressInterval.current);
     };
+  }, [playing, usingPreview, player]);
 
-    updateProgress();
-    const interval = setInterval(updateProgress, 100);
-
-    return () => clearInterval(interval);
-  }, [audio, usingPreview, playing]);
+  // Progress tracking for preview audio
+  useEffect(() => {
+    if (!audio) return;
+    
+    const updateProgress = () => {
+      setProgress(audio.currentTime * 1000);
+      setDuration(audio.duration * 1000 || 30000);
+    };
+    
+    audio.addEventListener('timeupdate', updateProgress);
+    audio.addEventListener('loadedmetadata', updateProgress);
+    
+    return () => {
+      audio.removeEventListener('timeupdate', updateProgress);
+      audio.removeEventListener('loadedmetadata', updateProgress);
+    };
+  }, [audio]);
 
   const login = async () => {
     const codeVerifier = generateRandomString(64);
@@ -228,8 +263,8 @@ export default function App() {
     setSelected(track);
     setPlaying(false);
     setUsingPreview(false);
-    setCurrentTime(0);
-    setDuration(0);
+    setProgress(0);
+    setDuration(track.duration_ms);
     setResults([]);
     setQuery('');
   };
@@ -254,10 +289,11 @@ export default function App() {
     if (!selected?.preview_url) return;
     const a = new Audio(selected.preview_url);
     a.play();
-    a.onended = () => setPlaying(false);
+    a.onended = () => { setPlaying(false); setProgress(0); };
     setAudio(a);
     setPlaying(true);
     setUsingPreview(true);
+    setDuration(30000);
   };
 
   const togglePlay = async () => {
@@ -280,6 +316,49 @@ export default function App() {
     }
   };
 
+  const seekToPosition = (clientX: number) => {
+    if (!selected || !progressBarRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const seekPos = percent * duration;
+
+    if (usingPreview && audio) {
+      audio.currentTime = seekPos / 1000;
+      setProgress(seekPos);
+    } else if (player) {
+      player.seek(seekPos);
+      setProgress(seekPos);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    seekToPosition(e.clientX);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging) {
+      seekToPosition(e.clientX);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Handle global mouse events when dragging
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, duration, usingPreview, audio, player, selected]);
+
   if (!token) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex items-center justify-center p-4">
@@ -296,7 +375,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-32">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-28">
       <div className="max-w-xl mx-auto pt-12">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Music className="w-8 h-8 text-green-500" />
@@ -356,47 +435,48 @@ export default function App() {
       </div>
 
       {/* Play Bar */}
-      {selected && playing && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800 p-4 shadow-2xl">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-4 mb-2">
-              <img
-                src={selected.album.images[2]?.url || selected.album.images[0]?.url}
-                alt=""
-                className="w-14 h-14 rounded shadow-lg"
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="text-white font-semibold truncate">{selected.name}</h3>
-                <p className="text-gray-400 text-sm truncate">
-                  {selected.artists.map(a => a.name).join(', ')}
-                </p>
+      {selected && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800">
+          <div className="max-w-4xl mx-auto px-4 py-3">
+            <div className="flex items-center gap-4">
+              {/* Track Info */}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <img src={selected.album.images[2]?.url || selected.album.images[0]?.url} alt="" className="w-12 h-12 rounded shadow-lg" />
+                <div className="min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{selected.name}</p>
+                  <p className="text-gray-400 text-xs truncate">{selected.artists.map(a => a.name).join(', ')}</p>
+                </div>
               </div>
-              <button
-                onClick={togglePlay}
-                className="bg-green-500 hover:bg-green-400 text-black p-3 rounded-full transition-all hover:scale-105"
-              >
-                {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-              </button>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-gray-400 text-xs min-w-[40px]">
-                {formatTime(currentTime)}
-              </span>
-              <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-green-500 transition-all duration-100"
-                  style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-                />
+              {/* Play Controls */}
+              <div className="flex flex-col items-center flex-1">
+                <button onClick={togglePlay} className="bg-white hover:bg-gray-200 text-black p-2 rounded-full transition-all mb-2">
+                  {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                </button>
+                
+                {/* Progress Bar */}
+                <div className="flex items-center gap-2 w-full max-w-md">
+                  <span className="text-gray-400 text-xs w-10 text-right">{formatTime(progress)}</span>
+                  <div 
+                    className="flex-1 h-1 bg-gray-700 rounded-full cursor-pointer group"
+                    onClick={handleSeek}
+                  >
+                    <div 
+                      className="h-full bg-green-500 rounded-full relative group-hover:bg-green-400 transition-colors"
+                      style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
+                    >
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                  <span className="text-gray-400 text-xs w-10">{formatTime(duration)}</span>
+                </div>
               </div>
-              <span className="text-gray-400 text-xs min-w-[40px]">
-                {formatTime(duration)}
-              </span>
-            </div>
 
-            {usingPreview && (
-              <p className="text-gray-500 text-xs text-center mt-2">Playing 30s preview</p>
-            )}
+              {/* Spacer for balance */}
+              <div className="flex-1 flex justify-end">
+                {usingPreview && <span className="text-gray-500 text-xs">Preview</span>}
+              </div>
+            </div>
           </div>
         </div>
       )}
