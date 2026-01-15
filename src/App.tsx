@@ -448,23 +448,20 @@ export default function App() {
         )}
 
         {selected && (
-          <div className="bg-gray-800/80 rounded-xl p-6 text-center">
-            <img src={selected.album.images[0]?.url} alt="" className="w-48 h-48 rounded-lg mx-auto mb-4 shadow-xl" />
-            <h2 className="text-xl font-bold text-white mb-1">{selected.name}</h2>
-            <p className="text-gray-400 mb-1">{selected.artists.map(a => a.name).join(', ')}</p>
-            <p className="text-gray-500 text-sm mb-4">{selected.album.name}</p>
-            
-            <div className="flex items-center justify-center gap-4">
-              <button onClick={togglePlay} className="bg-green-500 hover:bg-green-400 text-black p-4 rounded-full transition-all hover:scale-105">
-                {playing ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
-              </button>
-              <a href={selected.external_urls.spotify} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-green-500 transition-all">
-                <ExternalLink className="w-6 h-6" />
-              </a>
+          <div className="bg-gray-800/80 rounded-lg p-3 flex items-center gap-3 mb-4">
+            <img src={selected.album.images[0]?.url} alt="" className="w-24 h-24 rounded shadow-lg flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-bold text-white truncate">{selected.name}</h2>
+              <p className="text-gray-400 text-sm truncate">{selected.artists.map(a => a.name).join(', ')}</p>
+              <p className="text-gray-500 text-xs truncate">{selected.album.name}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <a href={selected.external_urls.spotify} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-green-500 transition-all">
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+                {usingPreview && <span className="text-gray-500 text-xs">30s preview</span>}
+                {!deviceId && !selected.preview_url && <span className="text-yellow-500 text-xs">Premium required</span>}
+              </div>
             </div>
-            
-            {usingPreview && <p className="text-gray-500 text-xs mt-3">Playing 30s preview</p>}
-            {!deviceId && !selected.preview_url && <p className="text-yellow-500 text-xs mt-3">Premium required for playback</p>}
           </div>
         )}
       </div>
