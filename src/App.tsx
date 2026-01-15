@@ -91,6 +91,7 @@ export default function App() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
+  const [loopEnabled, setLoopEnabled] = useState<boolean>(false);
   const [magnifier, setMagnifier] = useState<{ leftPercent: number; timeSec: number; visible: boolean }>({
     leftPercent: 0,
     timeSec: 0,
@@ -228,7 +229,7 @@ export default function App() {
 
   // Loop detection and handling
   useEffect(() => {
-    if (!playing || loopStart === null || loopEnd === null) return;
+    if (!playing || !loopEnabled || loopStart === null || loopEnd === null) return;
     if (loopStart >= loopEnd) return; // Invalid loop
 
     // Check if we've passed the loop end point
@@ -239,7 +240,7 @@ export default function App() {
         player.seek(loopStart);
       }
     }
-  }, [progress, playing, loopStart, loopEnd, usingPreview, audio, player]);
+  }, [progress, playing, loopEnabled, loopStart, loopEnd, usingPreview, audio, player]);
 
   const login = async () => {
     const codeVerifier = generateRandomString(64);
@@ -290,6 +291,7 @@ export default function App() {
     setDuration(track.duration_ms);
     setLoopStart(null);
     setLoopEnd(null);
+    setLoopEnabled(false);
     setResults([]);
     setQuery('');
   };
@@ -352,6 +354,48 @@ export default function App() {
   const clearLoop = () => {
     setLoopStart(null);
     setLoopEnd(null);
+    setLoopEnabled(false);
+  };
+
+  const formatTimeInput = (ms: number | null): string => {
+    if (ms === null) return '';
+    const totalSeconds = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const parseTimeInput = (timeStr: string): number | null => {
+    const parts = timeStr.split(':');
+    if (parts.length !== 2) return null;
+    const mins = parseInt(parts[0]);
+    const secs = parseInt(parts[1]);
+    if (isNaN(mins) || isNaN(secs) || secs < 0 || secs >= 60) return null;
+    return (mins * 60 + secs) * 1000;
+  };
+
+  const handleLoopStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+      setLoopStart(null);
+      return;
+    }
+    const ms = parseTimeInput(value);
+    if (ms !== null && ms >= 0 && ms <= duration) {
+      setLoopStart(ms);
+    }
+  };
+
+  const handleLoopEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+      setLoopEnd(null);
+      return;
+    }
+    const ms = parseTimeInput(value);
+    if (ms !== null && ms >= 0 && ms <= duration) {
+      setLoopEnd(ms);
+    }
   };
 
   const seekToPosition = (clientX: number) => {
@@ -440,7 +484,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-28">
-      <div className="max-w-xl mx-auto pt-12">
+      <div className="max-w-7xl mx-auto pt-12 flex gap-6">
+        <div className="flex-1 max-w-xl">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Music className="w-8 h-8 text-green-500" />
           <h1 className="text-2xl font-bold text-white">Spotify Search</h1>
@@ -489,6 +534,87 @@ export default function App() {
                 </a>
                 {usingPreview && <span className="text-gray-500 text-xs">30s preview</span>}
                 {!deviceId && !selected.preview_url && <span className="text-yellow-500 text-xs">Premium required</span>}
+              </div>
+            </div>
+          </div>
+        )}
+        </div>
+
+        {/* Right Panel - Loop Controls */}
+        {selected && (
+          <div className="w-80 flex-shrink-0">
+            <div className="bg-gray-800/80 rounded-lg p-4 sticky top-12">
+              <h3 className="text-lg font-bold text-white mb-4">Loop Controls</h3>
+
+              <div className="space-y-4">
+                {/* Start Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Start Time
+                  </label>
+                  <input
+                    type="text"
+                    value={formatTimeInput(loopStart)}
+                    onChange={handleLoopStartChange}
+                    placeholder="0:00"
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+                  />
+                </div>
+
+                {/* End Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    End Time
+                  </label>
+                  <input
+                    type="text"
+                    value={formatTimeInput(loopEnd)}
+                    onChange={handleLoopEndChange}
+                    placeholder="0:00"
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+                  />
+                </div>
+
+                {/* Loop Enabled Checkbox */}
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="loopEnabled"
+                    checked={loopEnabled}
+                    onChange={(e) => setLoopEnabled(e.target.checked)}
+                    disabled={loopStart === null || loopEnd === null || loopStart >= loopEnd}
+                    className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-green-500 focus:ring-green-500 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor="loopEnabled" className="text-sm text-gray-300 select-none">
+                    Enable Loop
+                  </label>
+                </div>
+
+                {/* Clear Button */}
+                {(loopStart !== null || loopEnd !== null) && (
+                  <button
+                    onClick={clearLoop}
+                    className="w-full mt-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-all text-sm"
+                  >
+                    Clear Loop Points
+                  </button>
+                )}
+
+                {/* Status Info */}
+                <div className="mt-4 p-3 bg-gray-700/50 rounded text-xs text-gray-400">
+                  {loopStart === null && loopEnd === null && (
+                    <p>Click the start and end buttons while playing to set loop points.</p>
+                  )}
+                  {loopStart !== null && loopEnd === null && (
+                    <p>Loop start set. Click the end button to complete the loop.</p>
+                  )}
+                  {loopStart !== null && loopEnd !== null && !loopEnabled && (
+                    <p>Loop points set. Enable the checkbox to activate looping.</p>
+                  )}
+                  {loopEnabled && loopStart !== null && loopEnd !== null && (
+                    <p className="text-green-400">Loop is active! The segment will repeat continuously.</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
