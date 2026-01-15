@@ -332,6 +332,7 @@ export default function App() {
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
     setIsDragging(true);
     seekToPosition(e.clientX);
   };
@@ -349,10 +350,12 @@ export default function App() {
   // Handle global mouse events when dragging
   useEffect(() => {
     if (isDragging) {
+      document.body.style.userSelect = 'none';
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
 
       return () => {
+        document.body.style.userSelect = '';
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
       };
@@ -437,45 +440,33 @@ export default function App() {
       {/* Play Bar */}
       {selected && (
         <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800">
-          <div className="max-w-4xl mx-auto px-4 py-3">
-            <div className="flex items-center gap-4">
-              {/* Track Info */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <img src={selected.album.images[2]?.url || selected.album.images[0]?.url} alt="" className="w-12 h-12 rounded shadow-lg" />
-                <div className="min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{selected.name}</p>
-                  <p className="text-gray-400 text-xs truncate">{selected.artists.map(a => a.name).join(', ')}</p>
-                </div>
-              </div>
+          <div className="mx-auto px-4 py-3">
+            <div className="flex items-center justify-center gap-4">
+              {/* Play Button */}
+              <button onClick={togglePlay} className="bg-white hover:bg-gray-200 text-black p-2 rounded-full transition-all flex-shrink-0">
+                {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              </button>
 
-              {/* Play Controls */}
-              <div className="flex flex-col items-center flex-1">
-                <button onClick={togglePlay} className="bg-white hover:bg-gray-200 text-black p-2 rounded-full transition-all mb-2">
-                  {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-                </button>
-                
-                {/* Progress Bar */}
-                <div className="flex items-center gap-2 w-full max-w-md">
-                  <span className="text-gray-400 text-xs w-10 text-right">{formatTime(progress)}</span>
-                  <div 
-                    className="flex-1 h-1 bg-gray-700 rounded-full cursor-pointer group"
-                    onClick={handleSeek}
+              {/* Progress Bar */}
+              <div className="flex items-center gap-3 w-full max-w-[80vw]">
+                <span className="text-gray-400 text-xs min-w-[40px] text-right">{formatTime(progress)}</span>
+                <div
+                  ref={progressBarRef}
+                  className={`flex-1 h-1.5 bg-gray-700 rounded-full group select-none ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
+                  onMouseDown={handleMouseDown}
+                >
+                  <div
+                    className="h-full bg-green-500 rounded-full relative group-hover:bg-green-400 transition-colors"
+                    style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
                   >
-                    <div 
-                      className="h-full bg-green-500 rounded-full relative group-hover:bg-green-400 transition-colors"
-                      style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
-                    >
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
+                    <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
                   </div>
-                  <span className="text-gray-400 text-xs w-10">{formatTime(duration)}</span>
                 </div>
+                <span className="text-gray-400 text-xs min-w-[40px]">{formatTime(duration)}</span>
               </div>
 
-              {/* Spacer for balance */}
-              <div className="flex-1 flex justify-end">
-                {usingPreview && <span className="text-gray-500 text-xs">Preview</span>}
-              </div>
+              {/* Preview indicator */}
+              {usingPreview && <span className="text-gray-500 text-xs flex-shrink-0">Preview</span>}
             </div>
           </div>
         </div>
