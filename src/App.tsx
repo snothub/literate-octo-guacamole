@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Play, Pause, Music, ExternalLink } from 'lucide-react';
+import { Search, Play, Pause, Music, ExternalLink, CircleDot, Circle, X } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -89,6 +89,8 @@ export default function App() {
   const [progress, setProgress] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [loopStart, setLoopStart] = useState<number | null>(null);
+  const [loopEnd, setLoopEnd] = useState<number | null>(null);
   const progressInterval = useRef<number | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
 
@@ -203,20 +205,35 @@ export default function App() {
   // Progress tracking for preview audio
   useEffect(() => {
     if (!audio) return;
-    
+
     const updateProgress = () => {
       setProgress(audio.currentTime * 1000);
       setDuration(audio.duration * 1000 || 30000);
     };
-    
+
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('loadedmetadata', updateProgress);
-    
+
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('loadedmetadata', updateProgress);
     };
   }, [audio]);
+
+  // Loop detection and handling
+  useEffect(() => {
+    if (!playing || loopStart === null || loopEnd === null) return;
+    if (loopStart >= loopEnd) return; // Invalid loop
+
+    // Check if we've passed the loop end point
+    if (progress >= loopEnd) {
+      if (usingPreview && audio) {
+        audio.currentTime = loopStart / 1000;
+      } else if (player) {
+        player.seek(loopStart);
+      }
+    }
+  }, [progress, playing, loopStart, loopEnd, usingPreview, audio, player]);
 
   const login = async () => {
     const codeVerifier = generateRandomString(64);
@@ -265,6 +282,8 @@ export default function App() {
     setUsingPreview(false);
     setProgress(0);
     setDuration(track.duration_ms);
+    setLoopStart(null);
+    setLoopEnd(null);
     setResults([]);
     setQuery('');
   };
@@ -314,6 +333,19 @@ export default function App() {
         setError('No playback available');
       }
     }
+  };
+
+  const setLoopStartPoint = () => {
+    setLoopStart(progress);
+  };
+
+  const setLoopEndPoint = () => {
+    setLoopEnd(progress);
+  };
+
+  const clearLoop = () => {
+    setLoopStart(null);
+    setLoopEnd(null);
   };
 
   const seekToPosition = (clientX: number) => {
@@ -447,20 +479,77 @@ export default function App() {
                 {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
               </button>
 
+              {/* Loop Controls */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={setLoopStartPoint}
+                  disabled={!playing}
+                  className={`p-1.5 rounded transition-all ${loopStart !== null ? 'bg-green-500 text-black' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'} disabled:opacity-30 disabled:cursor-not-allowed`}
+                  title="Set loop start"
+                >
+                  <CircleDot className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={setLoopEndPoint}
+                  disabled={!playing}
+                  className={`p-1.5 rounded transition-all ${loopEnd !== null ? 'bg-green-500 text-black' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'} disabled:opacity-30 disabled:cursor-not-allowed`}
+                  title="Set loop end"
+                >
+                  <Circle className="w-4 h-4" />
+                </button>
+                {(loopStart !== null || loopEnd !== null) && (
+                  <button
+                    onClick={clearLoop}
+                    className="p-1.5 rounded bg-gray-700 text-gray-400 hover:bg-gray-600 transition-all"
+                    title="Clear loop"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
               {/* Progress Bar */}
               <div className="flex items-center gap-3 w-full max-w-[80vw]">
                 <span className="text-gray-400 text-xs min-w-[40px] text-right">{formatTime(progress)}</span>
                 <div
                   ref={progressBarRef}
-                  className={`flex-1 h-1.5 bg-gray-700 rounded-full group select-none ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
+                  className={`flex-1 h-1.5 bg-gray-700 rounded-full group select-none relative ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
                   onMouseDown={handleMouseDown}
                 >
+                  {/* Loop region indicator */}
+                  {loopStart !== null && loopEnd !== null && loopStart < loopEnd && (
+                    <div
+                      className="absolute h-full bg-yellow-500/30 rounded-full"
+                      style={{
+                        left: `${(loopStart / duration) * 100}%`,
+                        width: `${((loopEnd - loopStart) / duration) * 100}%`,
+                      }}
+                    />
+                  )}
+
+                  {/* Current progress */}
                   <div
                     className="h-full bg-green-500 rounded-full relative group-hover:bg-green-400 transition-colors"
                     style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
                   >
                     <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
                   </div>
+
+                  {/* Loop start marker */}
+                  {loopStart !== null && (
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-400 rounded-full border border-yellow-600"
+                      style={{ left: `${(loopStart / duration) * 100}%` }}
+                    />
+                  )}
+
+                  {/* Loop end marker */}
+                  {loopEnd !== null && (
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-400 rounded-full border border-yellow-600"
+                      style={{ left: `${(loopEnd / duration) * 100}%` }}
+                    />
+                  )}
                 </div>
                 <span className="text-gray-400 text-xs min-w-[40px]">{formatTime(duration)}</span>
               </div>
