@@ -10,7 +10,7 @@ spec:
 
   source:
     repoURL: https://github.com/snothub/literate-octo-guacamole.git
-    targetRevision: main
+    targetRevision: feature/db
     path: kubernetes/helm-chart
 
     helm:
