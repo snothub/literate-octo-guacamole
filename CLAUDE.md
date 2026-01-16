@@ -196,6 +196,13 @@ To get a Spotify Client ID:
 - `.github/workflows/docker-image.yml`: CI/CD pipeline for building and pushing Docker images
 
 **Deployment**:
-- See `DEPLOYMENT.md` for complete deployment guide
+- See `DEPLOYMENT.md` for Docker deployment guide
+- See `kubernetes/README.md` for Kubernetes/Helm/ArgoCD deployment
 - GitHub Actions automatically builds and pushes images to Docker Hub on push to main
 - Images: `music-man:latest` (frontend) and `music-man-api:latest` (backend)
+
+**Kubernetes**:
+- `kubernetes/helm-chart/` - Helm chart for deploying to Kubernetes
+- `kubernetes/argocd/` - ArgoCD application manifests for GitOps
+- Supports deployment with Helm or ArgoCD
+- Includes StatefulSet for PostgreSQL with persistent volumes

@@ -1,0 +1,113 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: music-man-prod
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/snothub/literate-octo-guacamole.git
+    targetRevision: main
+    path: kubernetes/helm-chart
+
+    helm:
+      valueFiles:
+      - values.yaml
+      # - values-prod.yaml
+
+      values: |
+        # Production configuration
+        namespace: music-man-prod
+
+        frontend:
+          replicaCount: 3
+          image:
+            repository: danijels/music-man
+            tag: latest  # In production, pin to specific version
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+        backend:
+          replicaCount: 3
+          image:
+            repository: danijels/music-man-api
+            tag: latest  # In production, pin to specific version
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+
+        database:
+          persistence:
+            enabled: true
+            size: 50Gi
+            storageClass: "fast-ssd"  # Use appropriate storage class
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+
+        # Enable ingress for production
+        ingress:
+          enabled: true
+          className: nginx
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+          hosts:
+            - host: music-man.yourdomain.com
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend: frontend
+                - path: /api
+                  pathType: Prefix
+                  backend: backend
+          tls:
+            - secretName: music-man-tls
+              hosts:
+                - music-man.yourdomain.com
+
+      parameters:
+      # IMPORTANT: Use external secret management in production
+      # Consider using: Sealed Secrets, External Secrets Operator, or Vault
+      - name: secrets.databasePassword
+        value: "" # Set via ArgoCD UI or external secret
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: music-man-prod
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - Validate=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
