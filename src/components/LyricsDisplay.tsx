@@ -5,12 +5,23 @@ type LyricsDisplayProps = {
   lyricsLoading: boolean;
   progress: number;
   containerRef: React.RefObject<HTMLDivElement>;
+  className?: string;
+  heightClassName?: string;
 };
 
-export const LyricsDisplay = ({ lyrics, lyricsLoading, progress, containerRef }: LyricsDisplayProps) => {
+export const LyricsDisplay = ({
+  lyrics,
+  lyricsLoading,
+  progress,
+  containerRef,
+  className,
+  heightClassName,
+}: LyricsDisplayProps) => {
+  const containerClassName = className ?? 'max-w-4xl mx-auto';
+  const heightClass = heightClassName ?? 'h-32';
   if (lyricsLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-3 h-32 flex items-center justify-center">
+      <div className={`${containerClassName} px-4 py-3 ${heightClass} flex items-center justify-center`}>
         <p className="text-gray-400 text-sm">Loading lyrics...</p>
       </div>
     );
@@ -18,7 +29,7 @@ export const LyricsDisplay = ({ lyrics, lyricsLoading, progress, containerRef }:
 
   if (!lyricsLoading && lyrics.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-3 h-32 flex items-center justify-center">
+      <div className={`${containerClassName} px-4 py-3 ${heightClass} flex items-center justify-center`}>
         <p className="text-gray-500 text-sm">No synced lyrics available</p>
       </div>
     );
@@ -27,7 +38,7 @@ export const LyricsDisplay = ({ lyrics, lyricsLoading, progress, containerRef }:
   return (
     <div
       ref={containerRef}
-      className="max-w-4xl mx-auto px-4 py-3 h-32 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-900 scrollbar-track-transparent"
+      className={`${containerClassName} px-4 py-3 ${heightClass} overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-900 scrollbar-track-transparent`}
     >
       <div className="space-y-2">
         {lyrics.map((line, index) => {
@@ -38,7 +49,9 @@ export const LyricsDisplay = ({ lyrics, lyricsLoading, progress, containerRef }:
             <p
               key={index}
               className={`text-center transition-all duration-300 break-words ${
-                isCurrentLine ? 'text-white font-semibold text-lg scale-105' : 'text-gray-500 text-sm'
+                isCurrentLine
+                  ? 'text-white font-bold text-xl scale-105 drop-shadow'
+                  : 'text-gray-400 text-sm font-medium'
               }`}
             >
               {line.text}

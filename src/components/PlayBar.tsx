@@ -27,6 +27,7 @@ type PlayBarProps = {
   onProgressMouseDown: (event: React.MouseEvent<HTMLDivElement>) => void;
   onMarkerMouseDown: (event: React.MouseEvent, marker: 'start' | 'end') => void;
   onLoopClick: (loop: LoopSegment) => void;
+  onSegmentMouseDown: (event: React.MouseEvent, loop: LoopSegment) => void;
 };
 
 export const PlayBar = ({
@@ -52,6 +53,7 @@ export const PlayBar = ({
   onProgressMouseDown,
   onMarkerMouseDown,
   onLoopClick,
+  onSegmentMouseDown,
 }: PlayBarProps) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800">
@@ -61,8 +63,7 @@ export const PlayBar = ({
         progress={progress}
         containerRef={lyricsContainerRef}
       />
-
-      <div className="mx-auto px-4 py-3">
+      <div className="px-4 py-3">
         <div className="flex items-center justify-center gap-4">
           <button
             onClick={onTogglePlay}
@@ -74,7 +75,7 @@ export const PlayBar = ({
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={onSetLoopStart}
-              disabled={!playing}
+              disabled={!playing || Boolean(activeLoopId)}
               className={`p-1.5 rounded transition-all ${
                 loopStart !== null ? 'bg-green-500 text-black' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
               } disabled:opacity-30 disabled:cursor-not-allowed`}
@@ -84,7 +85,7 @@ export const PlayBar = ({
             </button>
             <button
               onClick={onSetLoopEnd}
-              disabled={!playing}
+              disabled={!playing || Boolean(activeLoopId)}
               className={`p-1.5 rounded transition-all ${
                 loopEnd !== null ? 'bg-green-500 text-black' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
               } disabled:opacity-30 disabled:cursor-not-allowed`}
@@ -117,6 +118,7 @@ export const PlayBar = ({
             onMouseDown={onProgressMouseDown}
             onMarkerMouseDown={onMarkerMouseDown}
             onLoopClick={onLoopClick}
+            onSegmentMouseDown={onSegmentMouseDown}
           />
 
           {usingPreview && <span className="text-gray-500 text-xs flex-shrink-0">Preview</span>}

@@ -15,6 +15,7 @@ type ProgressBarProps = {
   onMouseDown: (event: React.MouseEvent<HTMLDivElement>) => void;
   onMarkerMouseDown: (event: React.MouseEvent, marker: 'start' | 'end') => void;
   onLoopClick: (loop: LoopSegment) => void;
+  onSegmentMouseDown: (event: React.MouseEvent, loop: LoopSegment) => void;
 };
 
 export const ProgressBar = ({
@@ -31,6 +32,7 @@ export const ProgressBar = ({
   onMouseDown,
   onMarkerMouseDown,
   onLoopClick,
+  onSegmentMouseDown,
 }: ProgressBarProps) => {
   const activeLoopColor = loops.find((loop) => loop.id === activeLoopId)?.color || '#f59e0b';
   return (
@@ -55,7 +57,9 @@ export const ProgressBar = ({
                   width: `${width}%`,
                   backgroundColor: loop.color,
                 }}
-                onMouseDown={(event) => event.stopPropagation()}
+                onMouseDown={(event) => {
+                  onSegmentMouseDown(event, loop);
+                }}
                 onClick={(event) => {
                   event.stopPropagation();
                   onLoopClick(loop);
@@ -86,23 +90,16 @@ export const ProgressBar = ({
           const width = ((loop.end - loop.start) / duration) * 100;
           const isActive = loop.id === activeLoopId;
           return (
-            <button
+            <div
               key={loop.id}
-              type="button"
-              className={`absolute h-full rounded-full transition-opacity ${
-                isActive ? 'opacity-70 ring-2 ring-white/60' : 'opacity-35 hover:opacity-60'
+              className={`absolute h-full rounded-full pointer-events-none transition-opacity ${
+                isActive ? 'opacity-60' : 'opacity-30'
               }`}
               style={{
                 left: `${left}%`,
                 width: `${width}%`,
                 backgroundColor: loop.color,
               }}
-              onMouseDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                onLoopClick(loop);
-              }}
-              title={loop.label}
             />
           );
         })}

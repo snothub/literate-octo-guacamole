@@ -10,8 +10,6 @@ type LoopControlsPanelProps = {
   onLoopStartChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onLoopEndChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onLoopEnabledChange: (enabled: boolean) => void;
-  onSetLoopStartPoint: () => void;
-  onSetLoopEndPoint: () => void;
   onAddLoop: () => void;
   onRemoveLoop: (loopId: string) => void;
   onUpdateLabel: (value: string) => void;
@@ -27,8 +25,6 @@ export const LoopControlsPanel = ({
   onLoopStartChange,
   onLoopEndChange,
   onLoopEnabledChange,
-  onSetLoopStartPoint,
-  onSetLoopEndPoint,
   onAddLoop,
   onRemoveLoop,
   onUpdateLabel,
@@ -48,15 +44,9 @@ export const LoopControlsPanel = ({
               type="text"
               value={formatTimeInput(loopStart)}
               onChange={onLoopStartChange}
-              placeholder="0:00"
+              placeholder="0:00.000"
               className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
             />
-            <button
-              onClick={onSetLoopStartPoint}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-all text-xs"
-            >
-              Set
-            </button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -65,15 +55,9 @@ export const LoopControlsPanel = ({
               type="text"
               value={formatTimeInput(loopEnd)}
               onChange={onLoopEndChange}
-              placeholder="0:00"
+              placeholder="0:00.000"
               className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
             />
-            <button
-              onClick={onSetLoopEndPoint}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-all text-xs"
-            >
-              Set
-            </button>
           </div>
 
           {activeLoop && (

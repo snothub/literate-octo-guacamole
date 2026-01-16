@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import type { MagnifierState } from '../types/ui';
+import type { LoopSegment, MagnifierState } from '../types/ui';
 
 type UseProgressInteractionArgs = {
   duration: number;
   selectedId: string | null;
   loopStart: number | null;
   loopEnd: number | null;
+  loops: LoopSegment[];
   onSeekToMs: (positionMs: number) => void;
   onSetLoopStart: (positionMs: number) => void;
   onSetLoopEnd: (positionMs: number) => void;
+  onSelectLoop: (loopId: string) => void;
+  onUpdateLoopRange: (loopId: string, start: number, end: number) => void;
 };
 
 type ProgressInteractionState = {
@@ -18,6 +21,7 @@ type ProgressInteractionState = {
   progressBarRef: React.RefObject<HTMLDivElement>;
   handleMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleMarkerMouseDown: (e: React.MouseEvent, marker: 'start' | 'end') => void;
+  handleSegmentMouseDown: (e: React.MouseEvent, loop: LoopSegment) => void;
 };
 
 export const useProgressInteraction = ({
@@ -25,12 +29,16 @@ export const useProgressInteraction = ({
   selectedId,
   loopStart,
   loopEnd,
+  loops,
   onSeekToMs,
   onSetLoopStart,
   onSetLoopEnd,
+  onSelectLoop,
+  onUpdateLoopRange,
 }: UseProgressInteractionArgs): ProgressInteractionState => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [draggingMarker, setDraggingMarker] = useState<'start' | 'end' | null>(null);
+  const [isDraggingSegment, setIsDraggingSegment] = useState<boolean>(false);
   const [magnifier, setMagnifier] = useState<MagnifierState>({
     leftPercent: 0,
     timeSec: 0,
@@ -38,6 +46,12 @@ export const useProgressInteraction = ({
   });
   const progressBarRef = useRef<HTMLDivElement>(null);
   const magnifierTimeout = useRef<number | null>(null);
+  const draggingLoopRef = useRef<{
+    id: string;
+    start: number;
+    end: number;
+    startX: number;
+  } | null>(null);
 
   const seekToPosition = (clientX: number) => {
     if (!selectedId || !progressBarRef.current) return;
@@ -69,6 +83,17 @@ export const useProgressInteraction = ({
   };
 
   const handleMouseMove = (e: MouseEvent) => {
+    if (draggingLoopRef.current && progressBarRef.current) {
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const deltaPx = e.clientX - draggingLoopRef.current.startX;
+      const deltaMs = (deltaPx / rect.width) * duration;
+      const length = draggingLoopRef.current.end - draggingLoopRef.current.start;
+      const maxStart = Math.max(0, duration - length);
+      const nextStart = Math.max(0, Math.min(maxStart, draggingLoopRef.current.start + deltaMs));
+      const nextEnd = nextStart + length;
+      onUpdateLoopRange(draggingLoopRef.current.id, nextStart, nextEnd);
+      return;
+    }
     if (isDragging) {
       seekToPosition(e.clientX);
       showMagnifier(e.clientX);
@@ -96,6 +121,8 @@ export const useProgressInteraction = ({
   const handleMouseUp = () => {
     setIsDragging(false);
     setDraggingMarker(null);
+    setIsDraggingSegment(false);
+    draggingLoopRef.current = null;
   };
 
   const handleMarkerMouseDown = (e: React.MouseEvent, marker: 'start' | 'end') => {
@@ -104,8 +131,22 @@ export const useProgressInteraction = ({
     setDraggingMarker(marker);
   };
 
+  const handleSegmentMouseDown = (e: React.MouseEvent, loop: LoopSegment) => {
+    if (!progressBarRef.current) return;
+    e.stopPropagation();
+    e.preventDefault();
+    onSelectLoop(loop.id);
+    draggingLoopRef.current = {
+      id: loop.id,
+      start: loop.start,
+      end: loop.end,
+      startX: e.clientX,
+    };
+    setIsDraggingSegment(true);
+  };
+
   useEffect(() => {
-    if (isDragging || draggingMarker) {
+    if (isDragging || draggingMarker || isDraggingSegment) {
       document.body.style.userSelect = 'none';
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
@@ -116,7 +157,7 @@ export const useProgressInteraction = ({
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, draggingMarker, duration, loopStart, loopEnd]);
+  }, [isDragging, draggingMarker, isDraggingSegment, duration, loopStart, loopEnd, loops]);
 
   useEffect(() => {
     return () => {
@@ -131,6 +172,7 @@ export const useProgressInteraction = ({
     progressBarRef,
     handleMouseDown,
     handleMarkerMouseDown,
+    handleSegmentMouseDown,
   };
 };
 

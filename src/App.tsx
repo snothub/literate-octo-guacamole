@@ -52,6 +52,7 @@ export default function App() {
     setLoopEnabled,
     setLoopStartValue,
     setLoopEndValue,
+    updateLoopRange,
     setLoopStartPoint,
     setLoopEndPoint,
     clearLoop,
@@ -67,16 +68,26 @@ export default function App() {
     selectedTrackId: selected?.id ?? null,
     spotifyUserId,
   });
-  const { isDragging, draggingMarker, magnifier, progressBarRef, handleMouseDown, handleMarkerMouseDown } =
-    useProgressInteraction({
-      duration,
-      selectedId: selected?.id ?? null,
-      loopStart,
-      loopEnd,
-      onSeekToMs: seekToMs,
-      onSetLoopStart: (value) => setLoopStartValue(value),
-      onSetLoopEnd: (value) => setLoopEndValue(value),
-    });
+  const {
+    isDragging,
+    draggingMarker,
+    magnifier,
+    progressBarRef,
+    handleMouseDown,
+    handleMarkerMouseDown,
+    handleSegmentMouseDown,
+  } = useProgressInteraction({
+    duration,
+    selectedId: selected?.id ?? null,
+    loopStart,
+    loopEnd,
+    loops,
+    onSeekToMs: seekToMs,
+    onSetLoopStart: (value) => setLoopStartValue(value),
+    onSetLoopEnd: (value) => setLoopEndValue(value),
+    onSelectLoop: selectLoop,
+    onUpdateLoopRange: updateLoopRange,
+  });
 
   useGlobalSpacebar(() => {
     void togglePlay();
@@ -106,7 +117,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-28">
-      <div className="max-w-7xl mx-auto pt-12 flex gap-6">
+      <div className="max-w-7xl mx-auto pt-12 flex gap-6 items-stretch">
         <div className="flex-1 max-w-xl space-y-4">
           <SearchPanel
             className="w-full"
@@ -134,8 +145,6 @@ export default function App() {
             onLoopStartChange={handleLoopStartChange}
             onLoopEndChange={handleLoopEndChange}
             onLoopEnabledChange={setLoopEnabled}
-            onSetLoopStartPoint={setLoopStartPoint}
-            onSetLoopEndPoint={setLoopEndPoint}
             onAddLoop={addLoop}
             onRemoveLoop={removeLoop}
             onUpdateLabel={updateLoopLabel}
@@ -168,6 +177,7 @@ export default function App() {
           onProgressMouseDown={handleMouseDown}
           onMarkerMouseDown={handleMarkerMouseDown}
           onLoopClick={handleLoopClick}
+          onSegmentMouseDown={handleSegmentMouseDown}
         />
       )}
     </div>

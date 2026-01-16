@@ -26,6 +26,7 @@ type LoopControlsState = {
   setLoopEnabled: (enabled: boolean) => void;
   setLoopStartValue: (value: number | null) => void;
   setLoopEndValue: (value: number | null) => void;
+  updateLoopRange: (loopId: string, start: number, end: number) => void;
   setLoopStartPoint: () => void;
   setLoopEndPoint: () => void;
   handleLoopStartChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -184,17 +185,23 @@ export const useLoopControls = ({
 
   const clearSelection = () => {
     setActiveLoopId(null);
-    setLoopStart(null);
+    setLoopStart(progress);
     setLoopEnd(null);
     setLoopEnabled(false);
   };
 
   const addLoop = () => {
-    if (loopStart === null || loopEnd === null || loopStart >= loopEnd) return;
+    const start = progress;
+    let end = loopEnd;
+    if (end === null || end <= start) {
+      end = Math.min(start + 5000, duration);
+      setLoopEnd(end);
+    }
+    if (end <= start) return;
     const loop: LoopSegment = {
       id: buildLoopId(),
-      start: loopStart,
-      end: loopEnd,
+      start,
+      end,
       color: LOOP_COLORS[loops.length % LOOP_COLORS.length],
       label: `Loop ${loops.length + 1}`,
     };
@@ -238,6 +245,16 @@ export const useLoopControls = ({
     setLoopEnd(value);
     if (!activeLoopId || value === null) return;
     setLoops((prev) => prev.map((loop) => (loop.id === activeLoopId ? { ...loop, end: value } : loop)));
+  };
+
+  const updateLoopRange = (loopId: string, start: number, end: number) => {
+    setLoops((prev) =>
+      prev.map((loop) => (loop.id === loopId ? { ...loop, start, end } : loop))
+    );
+    if (loopId === activeLoopId) {
+      setLoopStart(start);
+      setLoopEnd(end);
+    }
   };
 
   const setLoopStartPoint = () => {
@@ -311,6 +328,7 @@ export const useLoopControls = ({
     setLoopEnabled,
     setLoopStartValue,
     setLoopEndValue,
+    updateLoopRange,
     setLoopStartPoint,
     setLoopEndPoint,
     handleLoopStartChange,
