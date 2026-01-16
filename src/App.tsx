@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LoopControlsPanel } from './components/LoopControlsPanel';
+import { LoopList } from './components/LoopList';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayBar } from './components/PlayBar';
 import { SearchPanel } from './components/SearchPanel';
@@ -106,18 +107,22 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-28">
       <div className="max-w-7xl mx-auto pt-12 flex gap-6">
-        <SearchPanel
-          query={query}
-          onQueryChange={setQuery}
-          onSearch={search}
-          loading={loading}
-          error={error}
-          results={results}
-          selected={selected}
-          usingPreview={usingPreview}
-          deviceId={deviceId}
-          onSelectTrack={handleSelectTrack}
-        />
+        <div className="flex-1 max-w-xl space-y-4">
+          <SearchPanel
+            className="w-full"
+            query={query}
+            onQueryChange={setQuery}
+            onSearch={search}
+            loading={loading}
+            error={error}
+            results={results}
+            selected={selected}
+            usingPreview={usingPreview}
+            deviceId={deviceId}
+            onSelectTrack={handleSelectTrack}
+          />
+          {selected && <LoopList loops={loops} activeLoopId={activeLoopId} onSeekLoop={handleLoopClick} />}
+        </div>
 
         {selected && (
           <LoopControlsPanel
@@ -129,10 +134,10 @@ export default function App() {
             onLoopStartChange={handleLoopStartChange}
             onLoopEndChange={handleLoopEndChange}
             onLoopEnabledChange={setLoopEnabled}
+            onSetLoopStartPoint={setLoopStartPoint}
+            onSetLoopEndPoint={setLoopEndPoint}
             onAddLoop={addLoop}
             onRemoveLoop={removeLoop}
-            onSelectLoop={selectLoop}
-            onSeekLoop={handleLoopClick}
             onUpdateLabel={updateLoopLabel}
             onClearSelection={clearSelection}
           />

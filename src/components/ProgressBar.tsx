@@ -37,7 +37,7 @@ export const ProgressBar = ({
     <div className="flex items-center gap-3 w-full max-w-[80vw] pt-12">
       <span className="text-gray-400 text-xs min-w-[40px] text-right">{formatTime(progress)}</span>
       <div className="flex-1 relative">
-        <div className="absolute -top-4 left-0 right-0 h-2">
+        <div className="absolute -top-6 left-0 right-0 h-4">
           {loops.map((loop) => {
             if (!duration) return null;
             const left = (loop.start / duration) * 100;
@@ -47,7 +47,7 @@ export const ProgressBar = ({
               <button
                 key={`${loop.id}-top`}
                 type="button"
-                className={`absolute h-full rounded-full transition-opacity ${
+                className={`absolute h-full rounded-full transition-opacity flex items-center justify-center px-1 text-[10px] font-semibold text-white ${
                   isActive ? 'opacity-90 ring-2 ring-white/60' : 'opacity-60 hover:opacity-85'
                 }`}
                 style={{
@@ -61,7 +61,9 @@ export const ProgressBar = ({
                   onLoopClick(loop);
                 }}
                 title={loop.label}
-              />
+              >
+                <span className="truncate w-full">{loop.label}</span>
+              </button>
             );
           })}
         </div>

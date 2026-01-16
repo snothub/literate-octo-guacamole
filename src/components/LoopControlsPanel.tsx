@@ -1,5 +1,5 @@
 import type { LoopSegment } from '../types/ui';
-import { formatTime, formatTimeInput } from '../utils/time';
+import { formatTimeInput } from '../utils/time';
 
 type LoopControlsPanelProps = {
   loops: LoopSegment[];
@@ -10,10 +10,10 @@ type LoopControlsPanelProps = {
   onLoopStartChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onLoopEndChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onLoopEnabledChange: (enabled: boolean) => void;
+  onSetLoopStartPoint: () => void;
+  onSetLoopEndPoint: () => void;
   onAddLoop: () => void;
   onRemoveLoop: (loopId: string) => void;
-  onSelectLoop: (loopId: string) => void;
-  onSeekLoop: (loop: LoopSegment) => void;
   onUpdateLabel: (value: string) => void;
   onClearSelection: () => void;
 };
@@ -27,10 +27,10 @@ export const LoopControlsPanel = ({
   onLoopStartChange,
   onLoopEndChange,
   onLoopEnabledChange,
+  onSetLoopStartPoint,
+  onSetLoopEndPoint,
   onAddLoop,
   onRemoveLoop,
-  onSelectLoop,
-  onSeekLoop,
   onUpdateLabel,
   onClearSelection,
 }: LoopControlsPanelProps) => {
@@ -38,7 +38,7 @@ export const LoopControlsPanel = ({
   const canAddLoop = loopStart !== null && loopEnd !== null && loopStart < loopEnd;
   return (
     <div className="w-80 flex-shrink-0">
-      <div className="bg-gray-800/80 rounded-lg p-4 sticky top-12">
+      <div className="bg-gray-800/80 rounded-lg p-4">
         <h3 className="text-lg font-bold text-white mb-4">Loop Controls</h3>
 
         <div className="space-y-3">
@@ -51,6 +51,12 @@ export const LoopControlsPanel = ({
               placeholder="0:00"
               className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
             />
+            <button
+              onClick={onSetLoopStartPoint}
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-all text-xs"
+            >
+              Set
+            </button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -62,6 +68,12 @@ export const LoopControlsPanel = ({
               placeholder="0:00"
               className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
             />
+            <button
+              onClick={onSetLoopEndPoint}
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-all text-xs"
+            >
+              Set
+            </button>
           </div>
 
           {activeLoop && (
@@ -129,37 +141,6 @@ export const LoopControlsPanel = ({
             )}
           </div>
 
-          {loops.length > 0 && (
-            <div className="pt-4">
-              <h4 className="text-sm font-semibold text-gray-300 mb-2">Saved Loops</h4>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {loops.map((loop) => {
-                  const isActive = loop.id === activeLoopId;
-                  return (
-                    <button
-                      key={loop.id}
-                      type="button"
-                      onClick={() => onSeekLoop(loop)}
-                      className={`w-full flex items-center justify-between gap-2 px-2 py-2 rounded border transition-all text-left ${
-                        isActive ? 'border-white/40 bg-gray-700' : 'border-transparent bg-gray-800/50 hover:bg-gray-700/70'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="inline-flex w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: loop.color }}
-                        />
-                        <span className="text-sm text-white truncate">{loop.label}</span>
-                      </div>
-                      <span className="text-xs text-gray-400 flex-shrink-0">
-                        {formatTime(loop.start)} - {formatTime(loop.end)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

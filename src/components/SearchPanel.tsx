@@ -2,6 +2,7 @@ import { ExternalLink, Music, Search } from 'lucide-react';
 import type { Track } from '../types/spotify';
 
 type SearchPanelProps = {
+  className?: string;
   query: string;
   onQueryChange: (value: string) => void;
   onSearch: () => void;
@@ -15,6 +16,7 @@ type SearchPanelProps = {
 };
 
 export const SearchPanel = ({
+  className,
   query,
   onQueryChange,
   onSearch,
@@ -27,7 +29,7 @@ export const SearchPanel = ({
   onSelectTrack,
 }: SearchPanelProps) => {
   return (
-    <div className="flex-1 max-w-xl">
+    <div className={className ?? 'flex-1 max-w-xl'}>
       <div className="flex items-center justify-center gap-2 mb-8">
         <Music className="w-8 h-8 text-green-500" />
         <h1 className="text-2xl font-bold text-white">Spotify Search</h1>

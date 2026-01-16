@@ -140,6 +140,7 @@ export const useLoopControls = ({
   };
 
   const initializeLoopForTrack = async (trackId: string) => {
+    setLoops([]);
     setLoopStart(null);
     setLoopEnd(null);
     setLoopEnabled(false);
