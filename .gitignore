@@ -41,3 +41,6 @@ coverage/
 
 # OS files
 Thumbs.db
+
+# PocketBase data
+pb_data/

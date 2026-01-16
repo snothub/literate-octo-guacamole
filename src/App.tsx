@@ -52,6 +52,8 @@ const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '011c5f27eef64dd0b6f
 const REDIRECT_URI = window.location.origin;
 const SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
 const formatTime = (ms: number): string => {
   const s = Math.floor(ms / 1000);
   const m = Math.floor(s / 60);
@@ -81,6 +83,7 @@ const base64encode = (input: ArrayBuffer): string => {
 
 export default function App() {
   const [token, setToken] = useState<string>('');
+  const [spotifyUserId, setSpotifyUserId] = useState<string>('');
   const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Track[]>([]);
   const [selected, setSelected] = useState<Track | null>(null);
@@ -110,6 +113,7 @@ export default function App() {
   const magnifierTimeout = useRef<number | null>(null);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
 
+
   useEffect(() => {
     // Check for authorization code in URL (PKCE flow)
     const params = new URLSearchParams(window.location.search);
@@ -123,8 +127,15 @@ export default function App() {
     } else {
       // Check if we already have a token in localStorage
       const storedToken = localStorage.getItem('spotify_token');
+      const storedUserId = localStorage.getItem('spotify_user_id');
       if (storedToken) {
         setToken(storedToken);
+        if (storedUserId) {
+          setSpotifyUserId(storedUserId);
+        } else {
+          // Fetch user profile if we have token but not user ID
+          fetchSpotifyUserProfile(storedToken);
+        }
       }
     }
   }, []);
@@ -154,9 +165,30 @@ export default function App() {
       localStorage.setItem('spotify_token', data.access_token);
       localStorage.removeItem('code_verifier');
       window.history.replaceState(null, '', window.location.pathname);
+
+      // Fetch Spotify user profile to get user ID
+      fetchSpotifyUserProfile(data.access_token);
     } catch (err) {
       setError('Authentication failed. Please try again.');
       localStorage.removeItem('code_verifier');
+    }
+  };
+
+  const fetchSpotifyUserProfile = async (accessToken: string) => {
+    try {
+      const response = await fetch('https://api.spotify.com/v1/me', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const userData = await response.json();
+      setSpotifyUserId(userData.id);
+      localStorage.setItem('spotify_user_id', userData.id);
+    } catch (err) {
+      console.error('Failed to fetch Spotify user profile:', err);
     }
   };
 
@@ -278,6 +310,17 @@ export default function App() {
     }
   }, [progress, lyrics]);
 
+  // Auto-save loop data when it changes
+  useEffect(() => {
+    if (selected && spotifyUserId) {
+      const timeoutId = setTimeout(() => {
+        saveLoopData(selected.id, loopStart, loopEnd, loopEnabled);
+      }, 500); // Debounce by 500ms
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selected, loopStart, loopEnd, loopEnabled, spotifyUserId]);
+
   const login = async () => {
     const codeVerifier = generateRandomString(64);
     const hashed = await sha256(codeVerifier);
@@ -294,6 +337,45 @@ export default function App() {
     authUrl.searchParams.append('code_challenge', codeChallenge);
 
     window.location.href = authUrl.toString();
+  };
+
+  // Loop data persistence functions
+  const saveLoopData = async (trackId: string, loopStart: number | null, loopEnd: number | null, loopEnabled: boolean) => {
+    if (!spotifyUserId) return;
+
+    try {
+      await fetch(`${API_URL}/api/loop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          spotifyUserId,
+          trackId,
+          loopStart,
+          loopEnd,
+          loopEnabled,
+        }),
+      });
+    } catch (err) {
+      console.error('Error saving loop data:', err);
+    }
+  };
+
+  const loadLoopData = async (trackId: string) => {
+    if (!spotifyUserId) return null;
+
+    try {
+      const response = await fetch(`${API_URL}/api/loop/${spotifyUserId}/${trackId}`);
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('Error loading loop data:', err);
+      return null;
+    }
   };
 
   const search = async () => {
@@ -315,7 +397,7 @@ export default function App() {
     }
   };
 
-  const selectTrack = (track: Track) => {
+  const selectTrack = async (track: Track) => {
     if (audio) {
       audio.pause();
       setAudio(null);
@@ -334,6 +416,14 @@ export default function App() {
     // Fetch lyrics for the selected track
     const artistName = track.artists[0]?.name || '';
     fetchLyrics(track.name, artistName);
+
+    // Load saved loop data if user is authenticated
+    const savedLoopData = await loadLoopData(track.id);
+    if (savedLoopData) {
+      setLoopStart(savedLoopData.loopStart);
+      setLoopEnd(savedLoopData.loopEnd);
+      setLoopEnabled(savedLoopData.loopEnabled);
+    }
   };
 
   const playWithSDK = async () => {
@@ -624,9 +714,11 @@ export default function App() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-28">
       <div className="max-w-7xl mx-auto pt-12 flex gap-6">
         <div className="flex-1 max-w-xl">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <Music className="w-8 h-8 text-green-500" />
-          <h1 className="text-2xl font-bold text-white">Spotify Search</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2">
+            <Music className="w-8 h-8 text-green-500" />
+            <h1 className="text-2xl font-bold text-white">Spotify Search</h1>
+          </div>
         </div>
 
         <div className="flex gap-2 mb-4">
@@ -923,6 +1015,7 @@ export default function App() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
