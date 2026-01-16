@@ -125,6 +125,14 @@ export const LoopControlsPanel = ({
             )}
           </div>
 
+          <div className="mt-3 p-3 bg-gray-800/70 rounded text-[11px] text-gray-400 space-y-1">
+            <p className="text-gray-300 font-semibold">Hotkeys</p>
+            <p>S: set start · E: set end · L: toggle loop · P: play from start</p>
+            <p>Option+←/→: prev/next loop</p>
+            <p>Shift+←/→: nudge start ±250ms (±50ms without Shift)</p>
+            <p>Ctrl+←/→: nudge end ±250ms (±50ms without Shift)</p>
+          </div>
+
         </div>
       </div>
     </div>

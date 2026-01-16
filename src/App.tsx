@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { LoopControlsPanel } from './components/LoopControlsPanel';
 import { LoopList } from './components/LoopList';
 import { LoginScreen } from './components/LoginScreen';
@@ -114,6 +114,118 @@ export default function App() {
       return next;
     });
   };
+
+  const loopIndexById = useMemo(() => {
+    return new Map(loops.map((loop, index) => [loop.id, index]));
+  }, [loops]);
+
+  const selectLoopAtIndex = async (index: number) => {
+    const nextLoop = loops[index];
+    if (!nextLoop) return;
+    selectLoop(nextLoop.id);
+    await playFromPosition(nextLoop.start);
+  };
+
+  const moveToAdjacentLoop = async (direction: -1 | 1) => {
+    if (loops.length === 0) return;
+    const currentIndex = activeLoopId ? loopIndexById.get(activeLoopId) ?? -1 : -1;
+    const nextIndex = (currentIndex + direction + loops.length) % loops.length;
+    await selectLoopAtIndex(nextIndex);
+  };
+
+  const nudgeLoopPoint = (target: 'start' | 'end', deltaMs: number) => {
+    if (!duration) return;
+    if (target === 'start') {
+      const current = loopStart ?? 0;
+      const next = Math.max(0, Math.min(duration, current + deltaMs));
+      setLoopStartValue(next);
+      if (loopEnd !== null && next > loopEnd) {
+        setLoopEndValue(next);
+      }
+    } else {
+      const current = loopEnd ?? 0;
+      const next = Math.max(0, Math.min(duration, current + deltaMs));
+      setLoopEndValue(next);
+      if (loopStart !== null && next < loopStart) {
+        setLoopStartValue(next);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const isTextInputTarget = (target: EventTarget | null) => {
+      if (!target || !(target as HTMLElement).tagName) return false;
+      const element = target as HTMLElement;
+      const tagName = element.tagName;
+      return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || element.isContentEditable;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isTextInputTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      const isShift = event.shiftKey;
+      const isAlt = event.altKey;
+      const isCtrl = event.ctrlKey || event.metaKey;
+
+      if (key === 's') {
+        event.preventDefault();
+        setLoopStartPoint();
+        return;
+      }
+      if (key === 'e') {
+        event.preventDefault();
+        setLoopEndPoint();
+        return;
+      }
+      if (key === 'l') {
+        event.preventDefault();
+        setLoopEnabled(!loopEnabled);
+        return;
+      }
+      if (key === 'p') {
+        event.preventDefault();
+        if (loopStart !== null) {
+          void playFromPosition(loopStart);
+        }
+        return;
+      }
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const direction = event.key === 'ArrowLeft' ? -1 : 1;
+        event.preventDefault();
+        if (isAlt) {
+          void moveToAdjacentLoop(direction);
+          return;
+        }
+        const step = isShift ? 250 : 50;
+        if (isCtrl) {
+          nudgeLoopPoint('end', direction * step);
+          return;
+        }
+        nudgeLoopPoint('start', direction * step);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [
+    duration,
+    loopStart,
+    loopEnd,
+    loopEnabled,
+    loops,
+    activeLoopId,
+    loopIndexById,
+    setLoopEnabled,
+    setLoopStartPoint,
+    setLoopEndPoint,
+    setLoopStartValue,
+    setLoopEndValue,
+    playFromPosition,
+    selectLoop,
+  ]);
 
   const handleLoopClick = async (loop: LoopSegment) => {
     selectLoop(loop.id);
