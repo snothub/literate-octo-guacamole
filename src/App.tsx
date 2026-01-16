@@ -252,11 +252,30 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-emerald-900/30 to-gray-900 p-3 sm:p-4 md:p-6 pb-32 sm:pb-36">
-      <div className="max-w-7xl mx-auto">
-        {/* Mobile: Stack vertically, Desktop: Side by side */}
-        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 pt-4 sm:pt-8 md:pt-12">
-          {/* Left column - Search and Loops */}
-          <div className="w-full lg:flex-1 lg:max-w-xl space-y-4">
+      <div className="max-w-[1800px] mx-auto">
+        {/* Desktop: 3 columns | Tablet: 2 columns | Mobile: Stack */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-4 md:gap-6 pt-4 sm:pt-8 md:pt-12">
+          
+          {/* Left Column - Loop Controls */}
+          <div className="order-2 lg:order-1">
+            <LoopControlsPanel
+              loops={loops}
+              activeLoopId={activeLoopId}
+              loopStart={loopStart}
+              loopEnd={loopEnd}
+              loopEnabled={loopEnabled}
+              onLoopStartChange={handleLoopStartChange}
+              onLoopEndChange={handleLoopEndChange}
+              onLoopEnabledChange={setLoopEnabled}
+              onAddLoop={addLoop}
+              onRemoveLoop={removeLoop}
+              onUpdateLabel={updateLoopLabel}
+              onClearSelection={clearSelection}
+            />
+          </div>
+
+          {/* Center Column - Search and Loops List */}
+          <div className="order-1 lg:order-2 space-y-4">
             <SearchPanel
               className="w-full"
               query={query}
@@ -273,28 +292,11 @@ export default function App() {
             {selected && <LoopList loops={loops} activeLoopId={activeLoopId} onSeekLoop={handleLoopClick} />}
           </div>
 
-          {/* Right columns - Controls and Recent (desktop side-by-side, mobile stacked) */}
-          {selected && (
-            <div className="flex flex-col sm:flex-row lg:flex-row gap-4">
-              <LoopControlsPanel
-                loops={loops}
-                activeLoopId={activeLoopId}
-                loopStart={loopStart}
-                loopEnd={loopEnd}
-                loopEnabled={loopEnabled}
-                onLoopStartChange={handleLoopStartChange}
-                onLoopEndChange={handleLoopEndChange}
-                onLoopEnabledChange={setLoopEnabled}
-                onAddLoop={addLoop}
-                onRemoveLoop={removeLoop}
-                onUpdateLabel={updateLoopLabel}
-                onClearSelection={clearSelection}
-              />
-              <div className="w-full sm:w-80">
-                <RecentTracksPane tracks={recentTracks} onSelectTrack={handleSelectTrack} />
-              </div>
-            </div>
-          )}
+          {/* Right Column - Recent Tracks */}
+          <div className="order-3">
+            <RecentTracksPane tracks={recentTracks} onSelectTrack={handleSelectTrack} />
+          </div>
+          
         </div>
       </div>
 
