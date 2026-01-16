@@ -13,7 +13,9 @@
       "Bash(docker-compose up:*)",
       "Bash(docker-compose build:*)",
       "Bash(curl:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(git push:*)",
+      "Bash(kubectl get:*)"
     ]
   }
 }

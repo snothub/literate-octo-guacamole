@@ -85,7 +85,7 @@ jobs:
         sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application.yaml
 
         # Update prod environment
-        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application-prod.yaml
+        # sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application-prod.yaml
 
         # Check if there are changes
         if git diff --quiet; then
