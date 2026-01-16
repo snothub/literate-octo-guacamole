@@ -58,9 +58,11 @@ export function useRuntimeConfig() {
 // Export a function to get config synchronously (for use in non-hook contexts)
 export function getRuntimeConfig(): RuntimeConfig {
   if (cachedConfig) {
+    console.log('Using cached config:', cachedConfig);
     return cachedConfig;
   }
   // Return compile-time defaults if runtime config not loaded yet
+  console.log('Using compile-time config:', import.meta.env);
   return {
     VITE_API_URL: import.meta.env.VITE_API_URL || 'http://localhost:4000',
     VITE_SPOTIFY_CLIENT_ID: import.meta.env.VITE_SPOTIFY_CLIENT_ID || '011c5f27eef64dd0b6f65ca673215a58',
