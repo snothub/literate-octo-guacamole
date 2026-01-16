@@ -49,6 +49,42 @@ export const SearchPanel = ({
 
       {error && <p className="text-red-400 text-sm mb-4 px-1">{error}</p>}
 
+      {!selected && !loading && results.length === 0 && !query && (
+        <div className="bg-gradient-to-br from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-xl p-6 border border-gray-700/30 text-center space-y-4">
+          <div className="text-5xl">🎵</div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-white">Welcome to Spotify Loop Trainer!</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Perfect for practicing music, dance choreography, or learning lyrics. Create custom loops to repeat any section of a song.
+            </p>
+          </div>
+          <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50 space-y-3">
+            <p className="text-emerald-400 font-semibold text-sm">How to use:</p>
+            <ol className="text-left text-xs text-gray-300 space-y-2 leading-relaxed">
+              <li className="flex gap-2">
+                <span className="text-emerald-400 font-bold flex-shrink-0">1.</span>
+                <span><strong className="text-white">Search</strong> for any track using the search bar above</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-emerald-400 font-bold flex-shrink-0">2.</span>
+                <span><strong className="text-white">Play</strong> the track and listen for the section you want to loop</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-emerald-400 font-bold flex-shrink-0">3.</span>
+                <span><strong className="text-white">Set points</strong> by pressing <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] font-mono mx-0.5">S</kbd> for start and <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] font-mono mx-0.5">E</kbd> for end</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-emerald-400 font-bold flex-shrink-0">4.</span>
+                <span><strong className="text-white">Add loop</strong> in the left panel, then enable it to start repeating</span>
+              </li>
+            </ol>
+          </div>
+          <p className="text-xs text-gray-500 pt-2">
+            💡 Tip: You can create multiple loops per track and fine-tune them with keyboard shortcuts!
+          </p>
+        </div>
+      )}
+
       {results.length > 0 && (
         <div className="bg-gray-800/60 backdrop-blur-sm rounded-xl overflow-hidden mb-4 max-h-72 sm:max-h-80 overflow-y-auto border border-gray-700/30">
           {results.map((track) => (
