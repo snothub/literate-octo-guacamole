@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LoopControlsPanel } from './components/LoopControlsPanel';
 import { LoopList } from './components/LoopList';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayBar } from './components/PlayBar';
+import { RecentTracksPane } from './components/RecentTracksPane';
 import { SearchPanel } from './components/SearchPanel';
 import { useGlobalSpacebar } from './hooks/useGlobalSpacebar';
 import { useLoopControls } from './hooks/useLoopControls';
@@ -15,6 +16,7 @@ import type { Track } from './types/spotify';
 import type { LoopSegment } from './types/ui';
 
 export default function App() {
+  const [recentTracks, setRecentTracks] = useState<Track[]>([]);
   const { token, spotifyUserId, error, setError, login, spotifyFetch } = useSpotifyAuth();
   const { query, setQuery, results, loading, search, resetSearch } = useSpotifySearch({
     token,
@@ -93,6 +95,26 @@ export default function App() {
     void togglePlay();
   });
 
+  useEffect(() => {
+    const stored = localStorage.getItem('recent_tracks');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as Track[];
+        setRecentTracks(parsed);
+      } catch {
+        localStorage.removeItem('recent_tracks');
+      }
+    }
+  }, []);
+
+  const updateRecentTracks = (track: Track) => {
+    setRecentTracks((prev) => {
+      const next = [track, ...prev.filter((t) => t.id !== track.id)].slice(0, 10);
+      localStorage.setItem('recent_tracks', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const handleLoopClick = async (loop: LoopSegment) => {
     selectLoop(loop.id);
     await playFromPosition(loop.start);
@@ -104,6 +126,7 @@ export default function App() {
     resetSearch();
     clearLyrics();
     setError('');
+    updateRecentTracks(track);
 
     const artistName = track.artists[0]?.name || '';
     void fetchLyrics(track.name, artistName);
@@ -136,20 +159,25 @@ export default function App() {
         </div>
 
         {selected && (
-          <LoopControlsPanel
-            loops={loops}
-            activeLoopId={activeLoopId}
-            loopStart={loopStart}
-            loopEnd={loopEnd}
-            loopEnabled={loopEnabled}
-            onLoopStartChange={handleLoopStartChange}
-            onLoopEndChange={handleLoopEndChange}
-            onLoopEnabledChange={setLoopEnabled}
-            onAddLoop={addLoop}
-            onRemoveLoop={removeLoop}
-            onUpdateLabel={updateLoopLabel}
-            onClearSelection={clearSelection}
-          />
+          <div className="flex gap-4">
+            <LoopControlsPanel
+              loops={loops}
+              activeLoopId={activeLoopId}
+              loopStart={loopStart}
+              loopEnd={loopEnd}
+              loopEnabled={loopEnabled}
+              onLoopStartChange={handleLoopStartChange}
+              onLoopEndChange={handleLoopEndChange}
+              onLoopEnabledChange={setLoopEnabled}
+              onAddLoop={addLoop}
+              onRemoveLoop={removeLoop}
+              onUpdateLabel={updateLoopLabel}
+              onClearSelection={clearSelection}
+            />
+            <div className="w-80">
+              <RecentTracksPane tracks={recentTracks} onSelectTrack={handleSelectTrack} />
+            </div>
+          </div>
         )}
       </div>
 
