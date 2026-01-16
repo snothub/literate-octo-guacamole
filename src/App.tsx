@@ -5,6 +5,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { PlayBar } from './components/PlayBar';
 import { RecentTracksPane } from './components/RecentTracksPane';
 import { SearchPanel } from './components/SearchPanel';
+import { FirstTimeTooltip } from './components/FirstTimeTooltip';
 import { useGlobalSpacebar } from './hooks/useGlobalSpacebar';
 import { useLoopControls } from './hooks/useLoopControls';
 import { useLyrics } from './hooks/useLyrics';
@@ -273,6 +274,15 @@ export default function App() {
                      linear-gradient(to bottom right, rgb(17, 24, 39), rgba(${backgroundColor}, 0.1), rgb(17, 24, 39))`
       }}
     >
+      {selected && (
+        <FirstTimeTooltip
+          isPlaying={playing}
+          hasLoopStart={loopStart !== null}
+          hasLoopEnd={loopEnd !== null}
+          hasActiveLoop={activeLoopId !== null}
+        />
+      )}
+
       <div className="max-w-[1800px] mx-auto">
         {/* Desktop: 3 columns | Tablet: 2 columns | Mobile: Stack */}
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-4 md:gap-6 pt-4 sm:pt-8 md:pt-12">

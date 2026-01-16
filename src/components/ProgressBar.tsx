@@ -129,18 +129,18 @@ export const ProgressBar = ({
               Start
             </div>
             <div
-              className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 top-0"
-              style={{ backgroundColor: activeLoopColor }}
-            />
-            <div
               onMouseDown={(event) => onMarkerMouseDown(event, 'start')}
-              className={`w-5 h-5 rounded-full border-2 shadow-lg transition-transform flex items-center justify-center text-xs font-bold text-gray-900 ${
+              className={`w-5 h-5 rounded-full border-2 shadow-lg transition-transform flex items-center justify-center text-xs font-bold text-gray-900 relative z-10 ${
                 draggingMarker === 'start' ? 'scale-125 cursor-grabbing' : 'cursor-grab hover:scale-110'
               }`}
               style={{ backgroundColor: activeLoopColor, borderColor: activeLoopColor }}
             >
               S
             </div>
+            <div
+              className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 top-5"
+              style={{ backgroundColor: activeLoopColor }}
+            />
           </div>
         )}
 
@@ -153,18 +153,18 @@ export const ProgressBar = ({
               End
             </div>
             <div
-              className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 top-0"
-              style={{ backgroundColor: activeLoopColor }}
-            />
-            <div
               onMouseDown={(event) => onMarkerMouseDown(event, 'end')}
-              className={`w-5 h-5 rounded-full border-2 shadow-lg transition-transform flex items-center justify-center text-xs font-bold text-gray-900 ${
+              className={`w-5 h-5 rounded-full border-2 shadow-lg transition-transform flex items-center justify-center text-xs font-bold text-gray-900 relative z-10 ${
                 draggingMarker === 'end' ? 'scale-125 cursor-grabbing' : 'cursor-grab hover:scale-110'
               }`}
               style={{ backgroundColor: activeLoopColor, borderColor: activeLoopColor }}
             >
               E
             </div>
+            <div
+              className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 top-5"
+              style={{ backgroundColor: activeLoopColor }}
+            />
           </div>
         )}
         </div>

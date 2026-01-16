@@ -96,9 +96,17 @@ export const LoopControlsPanel = ({
             <button
               onClick={onAddLoop}
               disabled={!canAddLoop}
-              className="flex-1 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-medium rounded-lg transition-all text-xs shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              className={`flex-1 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-medium rounded-lg transition-all text-xs shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none relative ${
+                canAddLoop && !activeLoop ? 'animate-pulse' : ''
+              }`}
             >
               Add Loop
+              {canAddLoop && !activeLoop && (
+                <span className="absolute -top-2 -right-2 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+              )}
             </button>
             {activeLoop && (
               <button
@@ -112,14 +120,34 @@ export const LoopControlsPanel = ({
 
           <div className="mt-2 p-2.5 bg-gray-900/40 rounded-lg text-[11px] text-gray-400 border border-gray-700/30">
             {loopStart === null && loopEnd === null && (
-              <p>💡 Set start/end with the buttons below or type times, then add the loop.</p>
+              <div className="space-y-1">
+                <p className="text-emerald-400 font-semibold">📍 Step 1: Set Loop Points</p>
+                <p>Click the green <span className="inline-flex items-center px-1 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-medium">● Start</span> and <span className="inline-flex items-center px-1 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-medium">○ End</span> buttons below while playing, or press <kbd className="px-1 py-0.5 bg-gray-700 rounded text-[9px] font-mono">S</kbd> and <kbd className="px-1 py-0.5 bg-gray-700 rounded text-[9px] font-mono">E</kbd> keys.</p>
+              </div>
             )}
-            {loopStart !== null && loopEnd === null && <p>⏱️ Loop start set. Set an end time to finish the loop.</p>}
+            {loopStart !== null && loopEnd === null && (
+              <div className="space-y-1">
+                <p className="text-emerald-400 font-semibold">📍 Step 2: Set End Point</p>
+                <p>⏱️ Loop start is set! Now click the <span className="inline-flex items-center px-1 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-medium">○ End</span> button or press <kbd className="px-1 py-0.5 bg-gray-700 rounded text-[9px] font-mono">E</kbd> to finish.</p>
+              </div>
+            )}
+            {loopStart !== null && loopEnd !== null && !activeLoop && (
+              <div className="space-y-1">
+                <p className="text-emerald-400 font-semibold">📍 Step 3: Add the Loop</p>
+                <p>✨ Loop points are ready! Click the "Add Loop" button below to save this segment.</p>
+              </div>
+            )}
             {loopStart !== null && loopEnd !== null && !loopEnabled && activeLoop && (
-              <p>✅ Loop points set. Enable the checkbox to activate looping.</p>
+              <div className="space-y-1">
+                <p className="text-emerald-400 font-semibold">📍 Step 4: Enable Looping</p>
+                <p>✅ Loop saved! Check the "Enable Loop" box above to start repeating this segment.</p>
+              </div>
             )}
             {loopEnabled && loopStart !== null && loopEnd !== null && activeLoop && (
-              <p className="text-emerald-400 font-medium">🔁 Loop is active! The segment will repeat continuously.</p>
+              <div className="space-y-1">
+                <p className="text-emerald-400 font-semibold">🔁 Loop Active!</p>
+                <p>The segment will repeat continuously. Create more loops or adjust this one!</p>
+              </div>
             )}
           </div>
 

@@ -81,7 +81,7 @@ export const PlayBar = ({
             <button
               onClick={onSetLoopStart}
               disabled={!playing || Boolean(activeLoopId)}
-              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md ${
+              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md relative group ${
                 loopStart !== null 
                   ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30' 
                   : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
@@ -89,11 +89,16 @@ export const PlayBar = ({
               title="Set loop start (S)"
             >
               <CircleDot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              {loopStart === null && !activeLoopId && (
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-medium shadow-lg">
+                  Press S or click
+                </span>
+              )}
             </button>
             <button
               onClick={onSetLoopEnd}
               disabled={!playing || Boolean(activeLoopId)}
-              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md ${
+              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md relative group ${
                 loopEnd !== null 
                   ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30' 
                   : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
@@ -101,6 +106,11 @@ export const PlayBar = ({
               title="Set loop end (E)"
             >
               <Circle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              {loopStart !== null && loopEnd === null && !activeLoopId && (
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-medium shadow-lg animate-pulse">
+                  Press E or click
+                </span>
+              )}
             </button>
             {(loopStart !== null || loopEnd !== null) && (
               <button
