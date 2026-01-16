@@ -120,8 +120,16 @@ export default function App() {
 
     if (code) {
       const codeVerifier = localStorage.getItem('code_verifier');
+
+      // Clean up URL immediately to prevent double execution
+      window.history.replaceState(null, '', window.location.pathname);
+
       if (codeVerifier) {
         exchangeCodeForToken(code, codeVerifier);
+      } else {
+        // Code verifier missing, clear everything and show login
+        localStorage.removeItem('code_verifier');
+        setError('Authentication failed. Please try logging in again.');
       }
     } else {
       // Check if we already have a token in localStorage
@@ -160,10 +168,14 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to exchange code for token');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Token exchange failed:', response.status, errorData);
+        throw new Error(`Failed to exchange code for token: ${response.status}`);
       }
 
       const data = await response.json();
+
+      // Store tokens
       setToken(data.access_token);
       localStorage.setItem('spotify_token', data.access_token);
 
@@ -173,14 +185,23 @@ export default function App() {
         localStorage.setItem('spotify_refresh_token', data.refresh_token);
       }
 
+      // Clean up code verifier
       localStorage.removeItem('code_verifier');
-      window.history.replaceState(null, '', window.location.pathname);
 
       // Fetch Spotify user profile to get user ID
-      fetchSpotifyUserProfile(data.access_token);
+      await fetchSpotifyUserProfile(data.access_token);
     } catch (err) {
-      setError('Authentication failed. Please try again.');
+      console.error('Authentication error:', err);
+      setError('Authentication failed. Please try logging in again.');
+
+      // Clean up on error
       localStorage.removeItem('code_verifier');
+      localStorage.removeItem('spotify_token');
+      localStorage.removeItem('spotify_refresh_token');
+      localStorage.removeItem('spotify_user_id');
+      setToken('');
+      setRefreshToken('');
+      setSpotifyUserId('');
     }
   };
 
