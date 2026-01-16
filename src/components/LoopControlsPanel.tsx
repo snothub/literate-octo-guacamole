@@ -32,8 +32,8 @@ export const LoopControlsPanel = ({
   const canAddLoop = loopStart !== null && loopEnd !== null && loopStart < loopEnd;
   
   return (
-    <div className="w-full h-[calc(100vh-12rem)] flex flex-col">
-      <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-700/50 flex flex-col h-full">
+    <div className="w-full max-h-[calc(100vh-20rem)] flex flex-col">
+      <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-700/50 flex flex-col h-full overflow-hidden">
         <div className="p-4 sm:p-5 flex-shrink-0 border-b border-gray-700/30">
           <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
             <span className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full"></span>
@@ -41,7 +41,7 @@ export const LoopControlsPanel = ({
           </h3>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-3">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
           <div className="space-y-2.5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2">
             <label className="text-xs font-medium text-emerald-300 w-full sm:w-16 flex-shrink-0">Start</label>
@@ -128,19 +128,13 @@ export const LoopControlsPanel = ({
             {loopStart !== null && loopEnd === null && (
               <div className="space-y-1">
                 <p className="text-emerald-400 font-semibold">📍 Step 2: Set End Point</p>
-                <p>⏱️ Loop start is set! Now click the <span className="inline-flex items-center px-1 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-medium">○ End</span> button or press <kbd className="px-1 py-0.5 bg-gray-700 rounded text-[9px] font-mono">E</kbd> to finish.</p>
-              </div>
-            )}
-            {loopStart !== null && loopEnd !== null && !activeLoop && (
-              <div className="space-y-1">
-                <p className="text-emerald-400 font-semibold">📍 Step 3: Add the Loop</p>
-                <p>✨ Loop points are ready! Click the "Add Loop" button below to save this segment.</p>
+                <p>⏱️ Loop start is set! Now click the <span className="inline-flex items-center px-1 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-medium">○ End</span> button or press <kbd className="px-1 py-0.5 bg-gray-700 rounded text-[9px] font-mono">E</kbd>. The loop will be created automatically!</p>
               </div>
             )}
             {loopStart !== null && loopEnd !== null && !loopEnabled && activeLoop && (
               <div className="space-y-1">
-                <p className="text-emerald-400 font-semibold">📍 Step 4: Enable Looping</p>
-                <p>✅ Loop saved! Check the "Enable Loop" box above to start repeating this segment.</p>
+                <p className="text-emerald-400 font-semibold">📍 Step 3: Enable Looping</p>
+                <p>✅ Loop created! Check the "Enable Loop" box above to start repeating this segment.</p>
               </div>
             )}
             {loopEnabled && loopStart !== null && loopEnd !== null && activeLoop && (

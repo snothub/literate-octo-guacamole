@@ -44,10 +44,10 @@ export const FirstTimeTooltip = ({
     message = "Press S now to set the loop start point at the current position";
     step = 1;
   } else if (!hasLoopEnd) {
-    message = "Great! Now press E to set the loop end point";
+    message = "Great! Now press E to set the loop end point (loop will be created automatically)";
     step = 2;
   } else {
-    message = "Perfect! Now click 'Add Loop' in the left panel to save this loop";
+    message = "Perfect! Your loop is created. Enable it in the left panel to start repeating";
     step = 3;
   }
 

@@ -7,8 +7,8 @@ type RecentTracksPaneProps = {
 
 export const RecentTracksPane = ({ tracks, onSelectTrack }: RecentTracksPaneProps) => {
   return (
-    <div className="w-full h-[calc(100vh-12rem)] flex flex-col">
-      <div className="bg-gradient-to-br from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700/30 flex flex-col h-full">
+    <div className="w-full max-h-[calc(100vh-20rem)] flex flex-col">
+      <div className="bg-gradient-to-br from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700/30 flex flex-col h-full overflow-hidden">
         <div className="p-4 flex-shrink-0">
           <h4 className="text-sm font-semibold text-emerald-300 mb-3 flex items-center gap-2">
             <span className="w-1 h-4 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full"></span>
@@ -21,7 +21,7 @@ export const RecentTracksPane = ({ tracks, onSelectTrack }: RecentTracksPaneProp
             <p className="text-gray-500 text-sm text-center">No recent tracks yet.<br />Search and select a song to get started!</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="flex-1 overflow-y-auto px-4 pb-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
             <div className="space-y-2">
               {tracks.map((track) => (
                 <button

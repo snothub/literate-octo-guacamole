@@ -71,11 +71,11 @@ export const SearchPanel = ({
               </li>
               <li className="flex gap-2">
                 <span className="text-emerald-400 font-bold flex-shrink-0">3.</span>
-                <span><strong className="text-white">Set points</strong> by pressing <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] font-mono mx-0.5">S</kbd> for start and <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] font-mono mx-0.5">E</kbd> for end</span>
+                <span><strong className="text-white">Set points</strong> by pressing <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] font-mono mx-0.5">S</kbd> for start and <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] font-mono mx-0.5">E</kbd> for end (auto-creates loop!)</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-emerald-400 font-bold flex-shrink-0">4.</span>
-                <span><strong className="text-white">Add loop</strong> in the left panel, then enable it to start repeating</span>
+                <span><strong className="text-white">Enable loop</strong> to start repeating your segment</span>
               </li>
             </ol>
           </div>

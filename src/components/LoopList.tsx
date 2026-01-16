@@ -33,14 +33,10 @@ export const LoopList = ({ loops, activeLoopId, onSeekLoop }: LoopListProps) => 
               </li>
               <li className="flex gap-2">
                 <span className="text-emerald-400 font-bold">2.</span>
-                <span>Press <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] font-mono">E</kbd> for end point</span>
+                <span>Press <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-[10px] font-mono">E</kbd> for end point (loop is auto-created!)</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-emerald-400 font-bold">3.</span>
-                <span>Click "Add Loop" in the left panel</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-emerald-400 font-bold">4.</span>
                 <span>Enable the loop to start repeating</span>
               </li>
             </ol>

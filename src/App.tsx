@@ -155,6 +155,17 @@ export default function App() {
     }
   };
 
+  const handleSetLoopEnd = () => {
+    setLoopEndPoint();
+    // Automatically add the loop if both start and end are set and no active loop exists
+    if (loopStart !== null && !activeLoopId) {
+      // Need to wait a tick for the state to update
+      setTimeout(() => {
+        addLoop();
+      }, 0);
+    }
+  };
+
   useEffect(() => {
     const isTextInputTarget = (target: EventTarget | null) => {
       if (!target || !(target as HTMLElement).tagName) return false;
@@ -178,7 +189,7 @@ export default function App() {
       }
       if (key === 'e') {
         event.preventDefault();
-        setLoopEndPoint();
+        handleSetLoopEnd();
         return;
       }
       if (key === 'l') {
@@ -223,7 +234,7 @@ export default function App() {
     loopIndexById,
     setLoopEnabled,
     setLoopStartPoint,
-    setLoopEndPoint,
+    handleSetLoopEnd,
     setLoopStartValue,
     setLoopEndValue,
     playFromPosition,
@@ -353,7 +364,7 @@ export default function App() {
           progressBarRef={progressBarRef}
           onTogglePlay={togglePlay}
           onSetLoopStart={setLoopStartPoint}
-          onSetLoopEnd={setLoopEndPoint}
+          onSetLoopEnd={handleSetLoopEnd}
           onClearLoop={clearLoop}
           onProgressMouseDown={handleMouseDown}
           onMarkerMouseDown={handleMarkerMouseDown}
