@@ -157,8 +157,15 @@ Just run `docker-compose up --build` and everything is configured automatically.
 To get a Spotify Client ID:
 1. Go to https://developer.spotify.com/dashboard
 2. Create a new app
-3. Add redirect URI matching your app's origin (e.g., `http://localhost:5173` for dev)
+3. Add redirect URI matching your app's origin (e.g., `http://localhost:5173` for dev, `http://localhost:3000` for Docker)
 4. Copy Client ID to `.env` file
+
+**Important - User Access:**
+- New Spotify apps start in **Development Mode** (limited to 25 users)
+- Users must be added manually in the dashboard under Settings → User Management
+- Each user receives an email invitation they must accept
+- For public access, submit your app for Extended Quota Mode review
+- See `SPOTIFY_USERS_SETUP.md` for detailed instructions
 
 ### TypeScript Configuration
 - Strict mode enabled with additional checks (`noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`)

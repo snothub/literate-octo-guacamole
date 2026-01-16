@@ -51,7 +51,6 @@ declare global {
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '011c5f27eef64dd0b6f65ca673215a58';
 const REDIRECT_URI = window.location.origin;
 const SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state';
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 const formatTime = (ms: number): string => {
@@ -83,6 +82,7 @@ const base64encode = (input: ArrayBuffer): string => {
 
 export default function App() {
   const [token, setToken] = useState<string>('');
+  const [refreshToken, setRefreshToken] = useState<string>('');
   const [spotifyUserId, setSpotifyUserId] = useState<string>('');
   const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Track[]>([]);
@@ -121,15 +121,28 @@ export default function App() {
 
     if (code) {
       const codeVerifier = localStorage.getItem('code_verifier');
+
+      // Clean up URL immediately to prevent double execution
+      window.history.replaceState(null, '', window.location.pathname);
+
       if (codeVerifier) {
         exchangeCodeForToken(code, codeVerifier);
+      } else {
+        // Code verifier missing, clear everything and show login
+        localStorage.removeItem('code_verifier');
+        setError('Authentication failed. Please try logging in again.');
       }
     } else {
       // Check if we already have a token in localStorage
       const storedToken = localStorage.getItem('spotify_token');
+      const storedRefreshToken = localStorage.getItem('spotify_refresh_token');
       const storedUserId = localStorage.getItem('spotify_user_id');
+
       if (storedToken) {
         setToken(storedToken);
+        if (storedRefreshToken) {
+          setRefreshToken(storedRefreshToken);
+        }
         if (storedUserId) {
           setSpotifyUserId(storedUserId);
         } else {
@@ -157,25 +170,95 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to exchange code for token');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Token exchange failed:', response.status, errorData);
+        throw new Error(`Failed to exchange code for token: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Store tokens
+      setToken(data.access_token);
+      localStorage.setItem('spotify_token', data.access_token);
+
+      // Store refresh token for later use
+      if (data.refresh_token) {
+        setRefreshToken(data.refresh_token);
+        localStorage.setItem('spotify_refresh_token', data.refresh_token);
+      }
+
+      // Clean up code verifier
+      localStorage.removeItem('code_verifier');
+
+      // Fetch Spotify user profile to get user ID
+      await fetchSpotifyUserProfile(data.access_token);
+    } catch (err) {
+      console.error('Authentication error:', err);
+      setError('Authentication failed. Please try logging in again.');
+
+      // Clean up on error
+      localStorage.removeItem('code_verifier');
+      localStorage.removeItem('spotify_token');
+      localStorage.removeItem('spotify_refresh_token');
+      localStorage.removeItem('spotify_user_id');
+      setToken('');
+      setRefreshToken('');
+      setSpotifyUserId('');
+    }
+  };
+
+  const refreshAccessToken = async (): Promise<string | null> => {
+    if (!refreshToken) {
+      console.error('No refresh token available');
+      return null;
+    }
+
+    try {
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: CLIENT_ID,
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
       }
 
       const data = await response.json();
       setToken(data.access_token);
       localStorage.setItem('spotify_token', data.access_token);
-      localStorage.removeItem('code_verifier');
-      window.history.replaceState(null, '', window.location.pathname);
 
-      // Fetch Spotify user profile to get user ID
-      fetchSpotifyUserProfile(data.access_token);
+      // Spotify may return a new refresh token
+      if (data.refresh_token) {
+        setRefreshToken(data.refresh_token);
+        localStorage.setItem('spotify_refresh_token', data.refresh_token);
+      }
+
+      return data.access_token;
     } catch (err) {
-      setError('Authentication failed. Please try again.');
-      localStorage.removeItem('code_verifier');
+      console.error('Token refresh failed:', err);
+      setError('Session expired. Please log in again.');
+      // Clear stored tokens
+      localStorage.removeItem('spotify_token');
+      localStorage.removeItem('spotify_refresh_token');
+      localStorage.removeItem('spotify_user_id');
+      setToken('');
+      setRefreshToken('');
+      setSpotifyUserId('');
+      return null;
     }
   };
 
   const fetchSpotifyUserProfile = async (accessToken: string) => {
     try {
+      // Use direct fetch here since this is called during initial auth
+      // before spotifyFetch is ready to use
       const response = await fetch('https://api.spotify.com/v1/me', {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -190,6 +273,29 @@ export default function App() {
     } catch (err) {
       console.error('Failed to fetch Spotify user profile:', err);
     }
+  };
+
+  // Helper function to make Spotify API calls with automatic token refresh
+  const spotifyFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const makeRequest = async (accessToken: string) => {
+      const headers = {
+        ...options.headers,
+        Authorization: `Bearer ${accessToken}`,
+      };
+      return fetch(url, { ...options, headers });
+    };
+
+    let response = await makeRequest(token);
+
+    // If we get 401, try refreshing the token once
+    if (response.status === 401 && refreshToken) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        response = await makeRequest(newToken);
+      }
+    }
+
+    return response;
   };
 
   useEffect(() => {
@@ -383,9 +489,8 @@ export default function App() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await spotifyFetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`
       );
       if (!res.ok) throw new Error('Search failed');
       const data = await res.json();
@@ -418,20 +523,22 @@ export default function App() {
     fetchLyrics(track.name, artistName);
 
     // Load saved loop data if user is authenticated
-    const savedLoopData = await loadLoopData(track.id);
-    if (savedLoopData) {
-      setLoopStart(savedLoopData.loopStart);
-      setLoopEnd(savedLoopData.loopEnd);
-      setLoopEnabled(savedLoopData.loopEnabled);
+    if (spotifyUserId) {
+      const savedLoopData = await loadLoopData(track.id);
+      if (savedLoopData) {
+        setLoopStart(savedLoopData.loopStart);
+        setLoopEnd(savedLoopData.loopEnd);
+        setLoopEnabled(savedLoopData.loopEnabled);
+      }
     }
   };
 
   const playWithSDK = async () => {
     if (!selected || !deviceId) return;
     try {
-      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      await spotifyFetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uris: [selected.uri] })
       });
       setPlaying(true);
@@ -463,8 +570,18 @@ export default function App() {
       if (usingPreview && audio) {
         audio.play();
         setPlaying(true);
-      } else if (deviceId) {
-        await playWithSDK();
+      } else if (player) {
+        const state = await player.getCurrentState();
+        if (state && state.track_window.current_track.id === selected.id) {
+          await player.resume();
+          setPlaying(true);
+        } else if (deviceId) {
+          await playWithSDK();
+        } else if (selected.preview_url) {
+          playPreview();
+        } else {
+          setError('No playback available');
+        }
       } else if (selected.preview_url) {
         playPreview();
       } else {
@@ -472,6 +589,39 @@ export default function App() {
       }
     }
   };
+
+  useEffect(() => {
+    const isTextInputTarget = (target: EventTarget | null) => {
+      if (!target || !(target as HTMLElement).tagName) return false;
+      const element = target as HTMLElement;
+      const tagName = element.tagName;
+      return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || element.isContentEditable;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== 'Space' && event.key !== ' ') return;
+      if (event.repeat) return;
+      if (isTextInputTarget(event.target)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      void togglePlay();
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code !== 'Space' && event.key !== ' ') return;
+      if (isTextInputTarget(event.target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyUp, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
+    };
+  }, [togglePlay]);
 
   const setLoopStartPoint = () => {
     // Constrain to not go beyond end marker
