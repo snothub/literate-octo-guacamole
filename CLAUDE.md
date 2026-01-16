@@ -146,9 +146,11 @@ Just run `docker-compose up --build` and everything is configured automatically.
 
 ### Environment Variables
 
-**Frontend (.env)**:
+**Frontend (.env for development)**:
 - `VITE_SPOTIFY_CLIENT_ID`: Your Spotify application Client ID (required)
 - `VITE_API_URL`: Backend API URL (default: `http://localhost:4000`)
+
+**Note:** In production (Docker/Kubernetes), the frontend uses runtime configuration instead of build-time environment variables. The Docker entrypoint script generates a `config.json` file from environment variables, allowing the same image to be used across different environments.
 
 **Backend (docker-compose.yml)**:
 - `DATABASE_URL`: PostgreSQL connection string (auto-configured in Docker)

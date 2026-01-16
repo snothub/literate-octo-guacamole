@@ -7,12 +7,14 @@ import { useGlobalSpacebar } from './hooks/useGlobalSpacebar';
 import { useLoopControls } from './hooks/useLoopControls';
 import { useLyrics } from './hooks/useLyrics';
 import { useProgressInteraction } from './hooks/useProgressInteraction';
+import { useRuntimeConfig } from './hooks/useRuntimeConfig';
 import { useSpotifyAuth } from './hooks/useSpotifyAuth';
 import { useSpotifyPlayback } from './hooks/useSpotifyPlayback';
 import { useSpotifySearch } from './hooks/useSpotifySearch';
 import type { Track } from './types/spotify';
 
 export default function App() {
+  const { config, loading: configLoading } = useRuntimeConfig();
   const { token, spotifyUserId, error, setError, login, spotifyFetch } = useSpotifyAuth();
   const { query, setQuery, results, loading, search, resetSearch } = useSpotifySearch({
     token,
@@ -84,6 +86,14 @@ export default function App() {
     await initializeLoopForTrack(track.id);
   };
 
+  // Wait for runtime config to load
+  if (configLoading || !config) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading configuration...</div>
+      </div>
+    );
+  }
 
   if (!token) {
     return <LoginScreen onLogin={login} />;

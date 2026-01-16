@@ -27,6 +27,17 @@ spec:
         - name: http
           containerPort: {{ .Values.frontend.service.targetPort }}
           protocol: TCP
+        env:
+        - name: VITE_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: music-man-config
+              key: API_URL
+        - name: VITE_SPOTIFY_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: music-man-config
+              key: SPOTIFY_CLIENT_ID
         resources:
           {{- toYaml .Values.frontend.resources | nindent 10 }}
         livenessProbe:

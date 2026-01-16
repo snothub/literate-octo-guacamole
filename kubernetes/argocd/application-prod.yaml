@@ -34,6 +34,9 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+          env:
+            spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
+            apiUrl: "/api"  # Use relative path when ingress is enabled
 
         backend:
           replicaCount: 3

@@ -166,6 +166,37 @@ backend:
     tag: latest  # Use specific version in production
 ```
 
+### Frontend Configuration
+
+The frontend uses **runtime configuration** instead of build-time environment variables. This allows the same Docker image to be used across different environments (dev, staging, production).
+
+**How it works:**
+1. The frontend Docker image includes a `/docker-entrypoint.sh` script
+2. When the container starts, the script reads environment variables (`VITE_API_URL`, `VITE_SPOTIFY_CLIENT_ID`)
+3. It generates a `/config.json` file with these values
+4. The frontend app fetches this config at runtime
+
+**Configuration in values.yaml:**
+```yaml
+frontend:
+  env:
+    spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
+    apiUrl: "http://backend:4000"  # Kubernetes service URL
+```
+
+**For production with ingress enabled:**
+```yaml
+frontend:
+  env:
+    spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
+    apiUrl: "/api"  # Use relative path when same domain
+```
+
+**Important:** The frontend environment variables are passed to the container at runtime via ConfigMap, not baked into the Docker image. This means you can:
+- Use the same Docker image in multiple environments
+- Update configuration without rebuilding the image
+- Configure per-environment API URLs
+
 ### Secrets Management
 
 **Development:**

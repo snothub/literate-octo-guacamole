@@ -22,6 +22,9 @@ spec:
           image:
             repository: danijels/music-man
             tag: latest
+          env:
+            spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
+            apiUrl: "http://backend:4000"
 
         backend:
           image:

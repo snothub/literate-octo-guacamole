@@ -26,10 +26,10 @@ frontend:
       memory: "256Mi"
       cpu: "200m"
   env:
-    # Frontend environment variables are baked into build
-    # These are exposed via ConfigMap for documentation
+    # Frontend environment variables are configured at runtime
+    # via docker-entrypoint.sh which generates config.json
     spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
-    apiUrl: "http://backend:4000"
+    apiUrl: "http://backend:4000"  # Kubernetes service URL
 
 # Backend API configuration
 backend:
