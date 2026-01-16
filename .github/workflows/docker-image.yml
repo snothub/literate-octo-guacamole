@@ -11,9 +11,10 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
@@ -22,12 +23,27 @@ jobs:
 
     - name: Set short SHA
       run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
-    - name: Build the Docker image
-      run: | 
+
+    # Build and push frontend
+    - name: Build frontend Docker image
+      run: |
         docker build . --file Dockerfile \
           --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.SHORT_SHA }} \
           --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:latest
-    - name: Push to Docker Hub
-      run: | 
+
+    - name: Push frontend to Docker Hub
+      run: |
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.SHORT_SHA }}
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:latest
+
+    # Build and push backend
+    - name: Build backend Docker image
+      run: |
+        docker build ./backend --file backend/Dockerfile \
+          --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:${{ env.SHORT_SHA }} \
+          --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:latest
+
+    - name: Push backend to Docker Hub
+      run: |
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:${{ env.SHORT_SHA }}
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:latest

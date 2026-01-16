@@ -193,3 +193,9 @@ To get a Spotify Client ID:
 **Infrastructure**:
 - `docker-compose.yml`: Orchestrates frontend, backend API, and PostgreSQL database
 - `.env`: Environment variables for frontend (Spotify Client ID, API URL)
+- `.github/workflows/docker-image.yml`: CI/CD pipeline for building and pushing Docker images
+
+**Deployment**:
+- See `DEPLOYMENT.md` for complete deployment guide
+- GitHub Actions automatically builds and pushes images to Docker Hub on push to main
+- Images: `music-man:latest` (frontend) and `music-man-api:latest` (backend)
