@@ -11,6 +11,7 @@ import { useSpotifyAuth } from './hooks/useSpotifyAuth';
 import { useSpotifyPlayback } from './hooks/useSpotifyPlayback';
 import { useSpotifySearch } from './hooks/useSpotifySearch';
 import type { Track } from './types/spotify';
+import type { LoopSegment } from './types/ui';
 
 export default function App() {
   const { token, spotifyUserId, error, setError, login, spotifyFetch } = useSpotifyAuth();
@@ -27,6 +28,7 @@ export default function App() {
     progress,
     duration,
     togglePlay,
+    playFromPosition,
     seekToMs,
     resetPlaybackForTrack,
   } = useSpotifyPlayback({
@@ -37,9 +39,15 @@ export default function App() {
   });
   const { lyrics, lyricsLoading, lyricsContainerRef, fetchLyrics, clearLyrics } = useLyrics(progress);
   const {
+    loops,
+    activeLoopId,
     loopStart,
     loopEnd,
     loopEnabled,
+    selectLoop,
+    clearSelection,
+    addLoop,
+    removeLoop,
     setLoopEnabled,
     setLoopStartValue,
     setLoopEndValue,
@@ -48,6 +56,7 @@ export default function App() {
     clearLoop,
     handleLoopStartChange,
     handleLoopEndChange,
+    updateLoopLabel,
     initializeLoopForTrack,
   } = useLoopControls({
     progress,
@@ -71,6 +80,11 @@ export default function App() {
   useGlobalSpacebar(() => {
     void togglePlay();
   });
+
+  const handleLoopClick = async (loop: LoopSegment) => {
+    selectLoop(loop.id);
+    await playFromPosition(loop.start);
+  };
 
   const handleSelectTrack = async (track: Track) => {
     resetPlaybackForTrack(track);
@@ -107,13 +121,20 @@ export default function App() {
 
         {selected && (
           <LoopControlsPanel
+            loops={loops}
+            activeLoopId={activeLoopId}
             loopStart={loopStart}
             loopEnd={loopEnd}
             loopEnabled={loopEnabled}
             onLoopStartChange={handleLoopStartChange}
             onLoopEndChange={handleLoopEndChange}
             onLoopEnabledChange={setLoopEnabled}
-            onClearLoop={clearLoop}
+            onAddLoop={addLoop}
+            onRemoveLoop={removeLoop}
+            onSelectLoop={selectLoop}
+            onSeekLoop={handleLoopClick}
+            onUpdateLabel={updateLoopLabel}
+            onClearSelection={clearSelection}
           />
         )}
       </div>
@@ -124,6 +145,8 @@ export default function App() {
           usingPreview={usingPreview}
           loopStart={loopStart}
           loopEnd={loopEnd}
+          loops={loops}
+          activeLoopId={activeLoopId}
           progress={progress}
           duration={duration}
           isDragging={isDragging}
@@ -139,6 +162,7 @@ export default function App() {
           onClearLoop={clearLoop}
           onProgressMouseDown={handleMouseDown}
           onMarkerMouseDown={handleMarkerMouseDown}
+          onLoopClick={handleLoopClick}
         />
       )}
     </div>

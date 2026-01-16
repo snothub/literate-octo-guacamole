@@ -1,6 +1,6 @@
 import { Circle, CircleDot, Pause, Play, X } from 'lucide-react';
 import type { LyricLine } from '../types/spotify';
-import type { MagnifierState } from '../types/ui';
+import type { LoopSegment, MagnifierState } from '../types/ui';
 import { LyricsDisplay } from './LyricsDisplay';
 import { ProgressBar } from './ProgressBar';
 
@@ -9,6 +9,8 @@ type PlayBarProps = {
   usingPreview: boolean;
   loopStart: number | null;
   loopEnd: number | null;
+  loops: LoopSegment[];
+  activeLoopId: string | null;
   progress: number;
   duration: number;
   isDragging: boolean;
@@ -24,6 +26,7 @@ type PlayBarProps = {
   onClearLoop: () => void;
   onProgressMouseDown: (event: React.MouseEvent<HTMLDivElement>) => void;
   onMarkerMouseDown: (event: React.MouseEvent, marker: 'start' | 'end') => void;
+  onLoopClick: (loop: LoopSegment) => void;
 };
 
 export const PlayBar = ({
@@ -31,6 +34,8 @@ export const PlayBar = ({
   usingPreview,
   loopStart,
   loopEnd,
+  loops,
+  activeLoopId,
   progress,
   duration,
   isDragging,
@@ -46,6 +51,7 @@ export const PlayBar = ({
   onClearLoop,
   onProgressMouseDown,
   onMarkerMouseDown,
+  onLoopClick,
 }: PlayBarProps) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800">
@@ -102,12 +108,15 @@ export const PlayBar = ({
             duration={duration}
             loopStart={loopStart}
             loopEnd={loopEnd}
+            loops={loops}
+            activeLoopId={activeLoopId}
             isDragging={isDragging}
             magnifier={magnifier}
             draggingMarker={draggingMarker}
             progressBarRef={progressBarRef}
             onMouseDown={onProgressMouseDown}
             onMarkerMouseDown={onMarkerMouseDown}
+            onLoopClick={onLoopClick}
           />
 
           {usingPreview && <span className="text-gray-500 text-xs flex-shrink-0">Preview</span>}
