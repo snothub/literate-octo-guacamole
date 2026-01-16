@@ -10,7 +10,7 @@ imagePullPolicy: IfNotPresent
 frontend:
   enabled: true
   name: frontend
-  replicaCount: 2
+  replicaCount: 1
   image:
     repository: danijels/music-man
     tag: latest
@@ -35,9 +35,9 @@ frontend:
 backend:
   enabled: true
   name: backend
-  replicaCount: 2
+  replicaCount: 1
   image:
-    repository: <your-dockerhub-username>/music-man-api
+    repository: danijels/music-man-api
     tag: latest
   service:
     type: ClusterIP
