@@ -100,4 +100,4 @@ jobs:
         # Commit and push
         git add kubernetes/argocd/application.yaml kubernetes/argocd/application-prod.yaml
         git commit -m "chore: update image versions to ${{ env.VERSION }}"
-        git push origin main
+        git push origin feature/db
