@@ -2,9 +2,9 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main", "feature/db" ]
+    #    branches: [ "main" ]
     tags:
-      - 'v*.*.*'  # Trigger on version tags like v1.0.0
+    - 'v*.*.*' # Trigger on version tags like v1.0.0
   pull_request:
     branches: [ "main" ]
 
@@ -14,10 +14,16 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # Grant write permissions to push changes back to repository
+    permissions:
+      contents: write
+      packages: write
+
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Fetch all history for proper versioning
+        fetch-depth: 0 # Fetch all history for proper versioning
+        token: ${{ secrets.GITHUB_TOKEN }} # Use GitHub token for authentication
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
@@ -67,14 +73,19 @@ jobs:
     - name: Update ArgoCD application manifests
       if: env.IS_RELEASE == 'true'
       run: |
+        # Configure git
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
+        # Checkout main branch (we're in detached HEAD when triggered by tag)
+        git fetch origin main
+        git checkout main
+
         # Update dev environment
-        sed -i "s|tag: .*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application.yaml
+        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application.yaml
 
         # Update prod environment
-        sed -i "s|tag: .*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application-prod.yaml
+        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application-prod.yaml
 
         # Check if there are changes
         if git diff --quiet; then
@@ -82,7 +93,11 @@ jobs:
           exit 0
         fi
 
+        # Show what changed
+        echo "Changes to be committed:"
+        git diff kubernetes/argocd/
+
         # Commit and push
         git add kubernetes/argocd/application.yaml kubernetes/argocd/application-prod.yaml
         git commit -m "chore: update image versions to ${{ env.VERSION }}"
-        git push origin HEAD:main
+        git push origin main

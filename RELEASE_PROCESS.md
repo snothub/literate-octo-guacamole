@@ -236,6 +236,24 @@ For most use cases, deploying the same version to both dev and prod is fine, as 
 
 ## Troubleshooting
 
+### Issue: GitHub Actions permission denied (403)
+
+**Error:** `Permission to snothub/literate-octo-guacamole.git denied to github-actions[bot]`
+
+**Cause:** GitHub Actions doesn't have permission to push to the repository.
+
+**Fix:** This has been resolved in the workflow by adding:
+```yaml
+permissions:
+  contents: write
+```
+
+If you still see this error, check:
+1. Repository Settings → Actions → General
+2. Under "Workflow permissions"
+3. Select "Read and write permissions"
+4. Click "Save"
+
 ### Issue: GitHub Actions not triggering
 
 **Check:**
