@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { LoopControlsPanel } from './components/LoopControlsPanel';
+import { LoopList } from './components/LoopList';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayBar } from './components/PlayBar';
+import { RecentTracksPane } from './components/RecentTracksPane';
 import { SearchPanel } from './components/SearchPanel';
 import { useGlobalSpacebar } from './hooks/useGlobalSpacebar';
 import { useLoopControls } from './hooks/useLoopControls';
@@ -11,8 +13,12 @@ import { useSpotifyAuth } from './hooks/useSpotifyAuth';
 import { useSpotifyPlayback } from './hooks/useSpotifyPlayback';
 import { useSpotifySearch } from './hooks/useSpotifySearch';
 import type { Track } from './types/spotify';
+import type { LoopSegment } from './types/ui';
+import { extractDominantColor } from './utils/colorExtractor';
 
 export default function App() {
+  const [recentTracks, setRecentTracks] = useState<Track[]>([]);
+  const [backgroundColor, setBackgroundColor] = useState<string>('16, 185, 129'); // Default emerald
   const { token, spotifyUserId, error, setError, login, spotifyFetch } = useSpotifyAuth();
   const { query, setQuery, results, loading, search, resetSearch } = useSpotifySearch({
     token,
@@ -27,6 +33,7 @@ export default function App() {
     progress,
     duration,
     togglePlay,
+    playFromPosition,
     seekToMs,
     resetPlaybackForTrack,
   } = useSpotifyPlayback({
@@ -37,17 +44,24 @@ export default function App() {
   });
   const { lyrics, lyricsLoading, lyricsContainerRef, fetchLyrics, clearLyrics } = useLyrics(progress);
   const {
+    loops,
+    activeLoopId,
     loopStart,
     loopEnd,
     loopEnabled,
+    selectLoop,
+    addLoop,
+    removeLoop,
     setLoopEnabled,
     setLoopStartValue,
     setLoopEndValue,
+    updateLoopRange,
     setLoopStartPoint,
     setLoopEndPoint,
     clearLoop,
     handleLoopStartChange,
     handleLoopEndChange,
+    updateLoopLabel,
     initializeLoopForTrack,
   } = useLoopControls({
     progress,
@@ -57,20 +71,168 @@ export default function App() {
     selectedTrackId: selected?.id ?? null,
     spotifyUserId,
   });
-  const { isDragging, draggingMarker, magnifier, progressBarRef, handleMouseDown, handleMarkerMouseDown } =
-    useProgressInteraction({
-      duration,
-      selectedId: selected?.id ?? null,
-      loopStart,
-      loopEnd,
-      onSeekToMs: seekToMs,
-      onSetLoopStart: (value) => setLoopStartValue(value),
-      onSetLoopEnd: (value) => setLoopEndValue(value),
-    });
+  const {
+    isDragging,
+    draggingMarker,
+    segmentWasDragged,
+    magnifier,
+    progressBarRef,
+    handleMouseDown,
+    handleMarkerMouseDown,
+    handleSegmentMouseDown,
+  } = useProgressInteraction({
+    duration,
+    selectedId: selected?.id ?? null,
+    loopStart,
+    loopEnd,
+    loops,
+    onSeekToMs: seekToMs,
+    onSetLoopStart: (value) => setLoopStartValue(value),
+    onSetLoopEnd: (value) => setLoopEndValue(value),
+    onSelectLoop: selectLoop,
+    onUpdateLoopRange: updateLoopRange,
+  });
 
   useGlobalSpacebar(() => {
     void togglePlay();
   });
+
+  useEffect(() => {
+    const stored = localStorage.getItem('recent_tracks');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as Track[];
+        setRecentTracks(parsed);
+      } catch {
+        localStorage.removeItem('recent_tracks');
+      }
+    }
+  }, []);
+
+  const updateRecentTracks = (track: Track) => {
+    setRecentTracks((prev) => {
+      const next = [track, ...prev.filter((t) => t.id !== track.id)].slice(0, 10);
+      localStorage.setItem('recent_tracks', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const loopIndexById = useMemo(() => {
+    return new Map(loops.map((loop, index) => [loop.id, index]));
+  }, [loops]);
+
+  const selectLoopAtIndex = async (index: number) => {
+    const nextLoop = loops[index];
+    if (!nextLoop) return;
+    selectLoop(nextLoop.id);
+    await playFromPosition(nextLoop.start);
+  };
+
+  const moveToAdjacentLoop = async (direction: -1 | 1) => {
+    if (loops.length === 0) return;
+    const currentIndex = activeLoopId ? loopIndexById.get(activeLoopId) ?? -1 : -1;
+    const nextIndex = (currentIndex + direction + loops.length) % loops.length;
+    await selectLoopAtIndex(nextIndex);
+  };
+
+  const nudgeLoopPoint = (target: 'start' | 'end', deltaMs: number) => {
+    if (!duration) return;
+    if (target === 'start') {
+      const current = loopStart ?? 0;
+      const next = Math.max(0, Math.min(duration, current + deltaMs));
+      setLoopStartValue(next);
+      if (loopEnd !== null && next > loopEnd) {
+        setLoopEndValue(next);
+      }
+    } else {
+      const current = loopEnd ?? 0;
+      const next = Math.max(0, Math.min(duration, current + deltaMs));
+      setLoopEndValue(next);
+      if (loopStart !== null && next < loopStart) {
+        setLoopStartValue(next);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const isTextInputTarget = (target: EventTarget | null) => {
+      if (!target || !(target as HTMLElement).tagName) return false;
+      const element = target as HTMLElement;
+      const tagName = element.tagName;
+      return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || element.isContentEditable;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isTextInputTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      const isShift = event.shiftKey;
+      const isAlt = event.altKey;
+      const isCtrl = event.ctrlKey || event.metaKey;
+
+      if (key === 's') {
+        event.preventDefault();
+        setLoopStartPoint();
+        return;
+      }
+      if (key === 'e') {
+        event.preventDefault();
+        setLoopEndPoint();
+        return;
+      }
+      if (key === 'l') {
+        event.preventDefault();
+        setLoopEnabled(!loopEnabled);
+        return;
+      }
+      if (key === 'p') {
+        event.preventDefault();
+        if (loopStart !== null) {
+          void playFromPosition(loopStart);
+        }
+        return;
+      }
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const direction = event.key === 'ArrowLeft' ? -1 : 1;
+        event.preventDefault();
+        if (isAlt) {
+          void moveToAdjacentLoop(direction);
+          return;
+        }
+        const step = isShift ? 250 : 50;
+        if (isCtrl) {
+          nudgeLoopPoint('end', direction * step);
+          return;
+        }
+        nudgeLoopPoint('start', direction * step);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [
+    duration,
+    loopStart,
+    loopEnd,
+    loopEnabled,
+    loops,
+    activeLoopId,
+    loopIndexById,
+    setLoopEnabled,
+    setLoopStartPoint,
+    setLoopEndPoint,
+    setLoopStartValue,
+    setLoopEndValue,
+    playFromPosition,
+    selectLoop,
+  ]);
+
+  const handleLoopClick = async (loop: LoopSegment) => {
+    selectLoop(loop.id);
+    await playFromPosition(loop.start);
+  };
 
   const handleSelectTrack = async (track: Track) => {
     resetPlaybackForTrack(track);
@@ -78,10 +240,23 @@ export default function App() {
     resetSearch();
     clearLyrics();
     setError('');
+    updateRecentTracks(track);
 
     const artistName = track.artists[0]?.name || '';
     void fetchLyrics(track.name, artistName);
     await initializeLoopForTrack(track.id);
+    
+    // Extract color from album cover
+    const imageUrl = track.album.images[0]?.url;
+    if (imageUrl) {
+      try {
+        const color = await extractDominantColor(imageUrl);
+        setBackgroundColor(color);
+      } catch (err) {
+        console.error('Failed to extract color:', err);
+        // Keep current background color on error
+      }
+    }
   };
 
 
@@ -90,32 +265,59 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-28">
-      <div className="max-w-7xl mx-auto pt-12 flex gap-6">
-        <SearchPanel
-          query={query}
-          onQueryChange={setQuery}
-          onSearch={search}
-          loading={loading}
-          error={error}
-          results={results}
-          selected={selected}
-          usingPreview={usingPreview}
-          deviceId={deviceId}
-          onSelectTrack={handleSelectTrack}
-        />
+    <div 
+      className="min-h-screen p-3 sm:p-4 md:p-6 pb-32 sm:pb-36 transition-colors duration-1000"
+      style={{
+        background: `radial-gradient(ellipse at top, rgba(${backgroundColor}, 0.4), transparent 50%), 
+                     radial-gradient(ellipse at bottom, rgba(${backgroundColor}, 0.3), transparent 50%),
+                     linear-gradient(to bottom right, rgb(17, 24, 39), rgba(${backgroundColor}, 0.1), rgb(17, 24, 39))`
+      }}
+    >
+      <div className="max-w-[1800px] mx-auto">
+        {/* Desktop: 3 columns | Tablet: 2 columns | Mobile: Stack */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-4 md:gap-6 pt-4 sm:pt-8 md:pt-12">
+          
+          {/* Left Column - Loop Controls */}
+          <div className="order-2 lg:order-1">
+            <LoopControlsPanel
+              loops={loops}
+              activeLoopId={activeLoopId}
+              loopStart={loopStart}
+              loopEnd={loopEnd}
+              loopEnabled={loopEnabled}
+              onLoopStartChange={handleLoopStartChange}
+              onLoopEndChange={handleLoopEndChange}
+              onLoopEnabledChange={setLoopEnabled}
+              onAddLoop={addLoop}
+              onRemoveLoop={removeLoop}
+              onUpdateLabel={updateLoopLabel}
+            />
+          </div>
 
-        {selected && (
-          <LoopControlsPanel
-            loopStart={loopStart}
-            loopEnd={loopEnd}
-            loopEnabled={loopEnabled}
-            onLoopStartChange={handleLoopStartChange}
-            onLoopEndChange={handleLoopEndChange}
-            onLoopEnabledChange={setLoopEnabled}
-            onClearLoop={clearLoop}
-          />
-        )}
+          {/* Center Column - Search and Loops List */}
+          <div className="order-1 lg:order-2 space-y-4">
+            <SearchPanel
+              className="w-full"
+              query={query}
+              onQueryChange={setQuery}
+              onSearch={search}
+              loading={loading}
+              error={error}
+              results={results}
+              selected={selected}
+              usingPreview={usingPreview}
+              deviceId={deviceId}
+              onSelectTrack={handleSelectTrack}
+            />
+            {selected && <LoopList loops={loops} activeLoopId={activeLoopId} onSeekLoop={handleLoopClick} />}
+          </div>
+
+          {/* Right Column - Recent Tracks */}
+          <div className="order-3">
+            <RecentTracksPane tracks={recentTracks} onSelectTrack={handleSelectTrack} />
+          </div>
+          
+        </div>
       </div>
 
       {selected && (
@@ -124,14 +326,20 @@ export default function App() {
           usingPreview={usingPreview}
           loopStart={loopStart}
           loopEnd={loopEnd}
+          loops={loops}
+          activeLoopId={activeLoopId}
           progress={progress}
           duration={duration}
           isDragging={isDragging}
           magnifier={magnifier}
           draggingMarker={draggingMarker}
+          segmentWasDragged={segmentWasDragged}
           lyrics={lyrics}
           lyricsLoading={lyricsLoading}
           lyricsContainerRef={lyricsContainerRef}
+          onLyricsLineClick={(timeMs) => {
+            void playFromPosition(timeMs);
+          }}
           progressBarRef={progressBarRef}
           onTogglePlay={togglePlay}
           onSetLoopStart={setLoopStartPoint}
@@ -139,6 +347,8 @@ export default function App() {
           onClearLoop={clearLoop}
           onProgressMouseDown={handleMouseDown}
           onMarkerMouseDown={handleMarkerMouseDown}
+          onLoopClick={handleLoopClick}
+          onSegmentMouseDown={handleSegmentMouseDown}
         />
       )}
     </div>

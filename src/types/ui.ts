@@ -4,3 +4,12 @@ export type MagnifierState = {
   visible: boolean;
 };
 
+export type LoopSegment = {
+  id: string;
+  start: number;
+  end: number;
+  color: string;
+  label: string;
+  repetitions?: number;
+};
+

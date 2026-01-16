@@ -1,87 +1,139 @@
+import type { LoopSegment } from '../types/ui';
 import { formatTimeInput } from '../utils/time';
 
 type LoopControlsPanelProps = {
+  loops: LoopSegment[];
+  activeLoopId: string | null;
   loopStart: number | null;
   loopEnd: number | null;
   loopEnabled: boolean;
   onLoopStartChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onLoopEndChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onLoopEnabledChange: (enabled: boolean) => void;
-  onClearLoop: () => void;
+  onAddLoop: () => void;
+  onRemoveLoop: (loopId: string) => void;
+  onUpdateLabel: (value: string) => void;
 };
 
 export const LoopControlsPanel = ({
+  loops,
+  activeLoopId,
   loopStart,
   loopEnd,
   loopEnabled,
   onLoopStartChange,
   onLoopEndChange,
   onLoopEnabledChange,
-  onClearLoop,
+  onAddLoop,
+  onRemoveLoop,
+  onUpdateLabel,
 }: LoopControlsPanelProps) => {
+  const activeLoop = loops.find((loop) => loop.id === activeLoopId) || null;
+  const canAddLoop = loopStart !== null && loopEnd !== null && loopStart < loopEnd;
+  
   return (
-    <div className="w-80 flex-shrink-0">
-      <div className="bg-gray-800/80 rounded-lg p-4 sticky top-12">
-        <h3 className="text-lg font-bold text-white mb-4">Loop Controls</h3>
+    <div className="w-full h-[calc(100vh-12rem)] flex flex-col">
+      <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-700/50 flex flex-col h-full">
+        <div className="p-4 sm:p-5 flex-shrink-0 border-b border-gray-700/30">
+          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <span className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full"></span>
+            Loop Controls
+          </h3>
+        </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-gray-300 w-20 flex-shrink-0">Start Time</label>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-3">
+          <div className="space-y-2.5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2">
+            <label className="text-xs font-medium text-emerald-300 w-full sm:w-16 flex-shrink-0">Start</label>
             <input
               type="text"
               value={formatTimeInput(loopStart)}
               onChange={onLoopStartChange}
-              placeholder="0:00"
-              className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+              placeholder="0:00.000"
+              className="w-full flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all font-mono"
             />
           </div>
 
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-gray-300 w-20 flex-shrink-0">End Time</label>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2">
+            <label className="text-xs font-medium text-emerald-300 w-full sm:w-16 flex-shrink-0">End</label>
             <input
               type="text"
               value={formatTimeInput(loopEnd)}
               onChange={onLoopEndChange}
-              placeholder="0:00"
-              className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+              placeholder="0:00.000"
+              className="w-full flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all font-mono"
             />
           </div>
 
-          <div className="flex items-center gap-2 pt-2">
+          {activeLoop && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2">
+              <label className="text-xs font-medium text-emerald-300 w-full sm:w-16 flex-shrink-0">Label</label>
+              <input
+                type="text"
+                value={activeLoop.label}
+                onChange={(e) => onUpdateLabel(e.target.value)}
+                placeholder="Loop name"
+                className="w-full flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 pt-2 pb-1">
             <input
               type="checkbox"
               id="loopEnabled"
               checked={loopEnabled}
               onChange={(e) => onLoopEnabledChange(e.target.checked)}
-              disabled={loopStart === null || loopEnd === null || loopStart >= loopEnd}
-              className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-green-500 focus:ring-green-500 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!activeLoop || loopStart === null || loopEnd === null || loopStart >= loopEnd}
+              className="w-5 h-5 rounded-md border-2 border-gray-600 bg-gray-900/60 text-emerald-500 focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-0 focus:border-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all checked:bg-gradient-to-br checked:from-emerald-500 checked:to-emerald-600 checked:border-emerald-500 checked:shadow-lg checked:shadow-emerald-500/20"
             />
-            <label htmlFor="loopEnabled" className="text-sm text-gray-300 select-none">
+            <label htmlFor="loopEnabled" className="text-sm font-medium text-white select-none cursor-pointer">
               Enable Loop
             </label>
           </div>
 
-          {(loopStart !== null || loopEnd !== null) && (
+          <div className="flex gap-2 pt-1">
             <button
-              onClick={onClearLoop}
-              className="w-full mt-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-all text-sm"
+              onClick={onAddLoop}
+              disabled={!canAddLoop}
+              className="flex-1 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-medium rounded-lg transition-all text-xs shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              Clear Loop Points
+              Add Loop
             </button>
-          )}
-
-          <div className="mt-4 p-3 bg-gray-700/50 rounded text-xs text-gray-400">
-            {loopStart === null && loopEnd === null && (
-              <p>Click the start and end buttons while playing to set loop points.</p>
-            )}
-            {loopStart !== null && loopEnd === null && <p>Loop start set. Click the end button to complete the loop.</p>}
-            {loopStart !== null && loopEnd !== null && !loopEnabled && (
-              <p>Loop points set. Enable the checkbox to activate looping.</p>
-            )}
-            {loopEnabled && loopStart !== null && loopEnd !== null && (
-              <p className="text-green-400">Loop is active! The segment will repeat continuously.</p>
+            {activeLoop && (
+              <button
+                onClick={() => onRemoveLoop(activeLoop.id)}
+                className="flex-1 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium rounded-lg transition-all text-xs border border-red-500/20"
+              >
+                Remove Loop
+              </button>
             )}
           </div>
+
+          <div className="mt-2 p-2.5 bg-gray-900/40 rounded-lg text-[11px] text-gray-400 border border-gray-700/30">
+            {loopStart === null && loopEnd === null && (
+              <p>💡 Set start/end with the buttons below or type times, then add the loop.</p>
+            )}
+            {loopStart !== null && loopEnd === null && <p>⏱️ Loop start set. Set an end time to finish the loop.</p>}
+            {loopStart !== null && loopEnd !== null && !loopEnabled && activeLoop && (
+              <p>✅ Loop points set. Enable the checkbox to activate looping.</p>
+            )}
+            {loopEnabled && loopStart !== null && loopEnd !== null && activeLoop && (
+              <p className="text-emerald-400 font-medium">🔁 Loop is active! The segment will repeat continuously.</p>
+            )}
+          </div>
+
+          <div className="mt-2 p-2.5 bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-lg text-[10px] text-gray-400 space-y-0.5 border border-gray-700/30">
+            <p className="text-gray-300 font-semibold text-[11px] mb-1">⌨️ Keyboard Shortcuts</p>
+            <div className="space-y-0.5 leading-relaxed">
+              <p><kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">S</kbd> Set start · <kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">E</kbd> Set end · <kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">L</kbd> Toggle loop</p>
+              <p><kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">P</kbd> Play from start · <kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">⌥←/→</kbd> Prev/next loop</p>
+              <p><kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">⇧←/→</kbd> Nudge start ±250ms (±50ms w/o Shift)</p>
+              <p><kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">⌘←/→</kbd> Nudge end ±250ms (±50ms w/o Shift)</p>
+            </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
