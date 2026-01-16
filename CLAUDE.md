@@ -208,3 +208,6 @@ To get a Spotify Client ID:
 - `kubernetes/argocd/` - ArgoCD application manifests for GitOps
 - Supports deployment with Helm or ArgoCD
 - Includes StatefulSet for PostgreSQL with persistent volumes
+- Frontend uses runtime configuration (generates config.json at container startup)
+- **Releases**: Uses semantic versioning with automatic GitOps deployment
+- See `RELEASE_PROCESS.md` for creating releases (simply: `git tag v1.0.1 && git push origin v1.0.1`)

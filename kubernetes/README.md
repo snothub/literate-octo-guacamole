@@ -471,9 +471,45 @@ kubectl delete -f argocd/application.yaml
 argocd app delete music-man --cascade
 ```
 
+## Deploying New Versions
+
+This project uses **semantic versioning** and **automated GitOps** for deployments.
+
+### Creating a Release
+
+Simply create and push a version tag:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+GitHub Actions will:
+1. Build Docker images with version `v1.0.1`
+2. Push to Docker Hub
+3. Update ArgoCD manifests in Git
+4. ArgoCD auto-syncs and deploys the new version
+
+**See [RELEASE_PROCESS.md](../RELEASE_PROCESS.md) for complete documentation.**
+
+### Alternative Methods
+
+For detailed information about other deployment strategies, see:
+
+**[ARGOCD_IMAGE_UPDATES.md](../ARGOCD_IMAGE_UPDATES.md)** - Other options include:
+- Manual sync
+- ArgoCD Image Updater
+- Webhook triggers
+
+**Quick Manual Sync:**
+```bash
+argocd app sync music-man --force
+```
+
 ## References
 
 - [Helm Documentation](https://helm.sh/docs/)
 - [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
+- [ArgoCD Image Updater](https://argocd-image-updater.readthedocs.io/)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [PostgreSQL on Kubernetes](https://www.postgresql.org/docs/current/index.html)

@@ -3,6 +3,8 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main", "feature/db" ]
+    tags:
+      - 'v*.*.*'  # Trigger on version tags like v1.0.0
   pull_request:
     branches: [ "main" ]
 
@@ -14,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for proper versioning
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
@@ -21,29 +25,64 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Set short SHA
-      run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+    - name: Determine version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "IS_RELEASE=true" >> $GITHUB_ENV
+        else
+          VERSION=${GITHUB_SHA::7}
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "IS_RELEASE=false" >> $GITHUB_ENV
+        fi
+        echo "Building version: ${VERSION}"
 
     # Build and push frontend
     - name: Build frontend Docker image
       run: |
         docker build . --file Dockerfile \
-          --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.SHORT_SHA }} \
+          --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.VERSION }} \
           --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:latest
 
     - name: Push frontend to Docker Hub
       run: |
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.SHORT_SHA }}
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.VERSION }}
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:latest
 
     # Build and push backend
     - name: Build backend Docker image
       run: |
         docker build ./backend --file backend/Dockerfile \
-          --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:${{ env.SHORT_SHA }} \
+          --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:${{ env.VERSION }} \
           --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:latest
 
     - name: Push backend to Docker Hub
       run: |
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:${{ env.SHORT_SHA }}
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:${{ env.VERSION }}
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man-api:latest
+
+    # Update Git repository with new version (only for releases)
+    - name: Update ArgoCD application manifests
+      if: env.IS_RELEASE == 'true'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Update dev environment
+        sed -i "s|tag: .*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application.yaml
+
+        # Update prod environment
+        sed -i "s|tag: .*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application-prod.yaml
+
+        # Check if there are changes
+        if git diff --quiet; then
+          echo "No changes to commit"
+          exit 0
+        fi
+
+        # Commit and push
+        git add kubernetes/argocd/application.yaml kubernetes/argocd/application-prod.yaml
+        git commit -m "chore: update image versions to ${{ env.VERSION }}"
+        git push origin HEAD:main
