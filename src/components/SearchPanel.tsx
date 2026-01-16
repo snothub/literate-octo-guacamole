@@ -30,9 +30,11 @@ export const SearchPanel = ({
 }: SearchPanelProps) => {
   return (
     <div className={className ?? 'flex-1 max-w-xl'}>
-      <div className="flex items-center justify-center gap-2 mb-8">
-        <Music className="w-8 h-8 text-green-500" />
-        <h1 className="text-2xl font-bold text-white">Spotify Search</h1>
+      <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
+        <Music className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-500" />
+        <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+          Spotify Loop Trainer
+        </h1>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -42,31 +44,31 @@ export const SearchPanel = ({
           onChange={(e) => onQueryChange(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && onSearch()}
           placeholder="Search for a song..."
-          className="flex-1 bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-700 focus:border-green-500 focus:outline-none"
+          className="flex-1 bg-gray-800/80 backdrop-blur-sm text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-700/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none text-sm sm:text-base transition-all"
         />
         <button
           onClick={onSearch}
           disabled={loading}
-          className="bg-green-500 hover:bg-green-400 text-black p-3 rounded-lg transition-all disabled:opacity-50"
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white p-2.5 sm:p-3 rounded-lg transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
         >
-          <Search className="w-6 h-6" />
+          <Search className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
       </div>
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-red-400 text-sm mb-4 px-1">{error}</p>}
 
       {results.length > 0 && (
-        <div className="bg-gray-800/50 rounded-lg overflow-hidden mb-4 max-h-80 overflow-y-auto">
+        <div className="bg-gray-800/60 backdrop-blur-sm rounded-xl overflow-hidden mb-4 max-h-72 sm:max-h-80 overflow-y-auto border border-gray-700/30">
           {results.map((track) => (
             <button
               key={track.id}
               onClick={() => onSelectTrack(track)}
-              className="w-full flex items-center gap-3 p-3 hover:bg-gray-700/50 transition-all text-left"
+              className="w-full flex items-center gap-3 p-3 hover:bg-gray-700/50 transition-all text-left active:bg-gray-700"
             >
-              <img src={track.album.images[2]?.url || track.album.images[0]?.url} alt="" className="w-12 h-12 rounded" />
+              <img src={track.album.images[2]?.url || track.album.images[0]?.url} alt="" className="w-12 h-12 rounded shadow-md flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{track.name}</p>
-                <p className="text-gray-400 text-sm truncate">{track.artists.map((a) => a.name).join(', ')}</p>
+                <p className="text-white font-medium truncate text-sm sm:text-base">{track.name}</p>
+                <p className="text-gray-400 text-xs sm:text-sm truncate">{track.artists.map((a) => a.name).join(', ')}</p>
               </div>
             </button>
           ))}
@@ -74,20 +76,20 @@ export const SearchPanel = ({
       )}
 
       {selected && (
-        <div className="bg-gray-800/80 rounded-lg p-3 flex items-center gap-3 mb-4">
-          <img src={selected.album.images[0]?.url} alt="" className="w-24 h-24 rounded shadow-lg flex-shrink-0" />
+        <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-xl p-3 sm:p-4 flex items-center gap-3 mb-4 shadow-xl border border-gray-700/50">
+          <img src={selected.album.images[0]?.url} alt="" className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg shadow-lg flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-white truncate">{selected.name}</h2>
-            <p className="text-gray-400 text-sm truncate">{selected.artists.map((a) => a.name).join(', ')}</p>
+            <h2 className="text-sm sm:text-base font-bold text-white truncate">{selected.name}</h2>
+            <p className="text-gray-400 text-xs sm:text-sm truncate">{selected.artists.map((a) => a.name).join(', ')}</p>
             <p className="text-gray-500 text-xs truncate">{selected.album.name}</p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1.5">
               <a
                 href={selected.external_urls.spotify}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-green-500 transition-all"
+                className="text-gray-400 hover:text-emerald-500 transition-all"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
               {usingPreview && <span className="text-gray-500 text-xs">30s preview</span>}
               {!deviceId && !selected.preview_url && <span className="text-yellow-500 text-xs">Premium required</span>}

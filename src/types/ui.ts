@@ -10,5 +10,6 @@ export type LoopSegment = {
   end: number;
   color: string;
   label: string;
+  repetitions?: number;
 };
 

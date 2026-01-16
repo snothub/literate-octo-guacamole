@@ -58,7 +58,7 @@ export const PlayBar = ({
   onSegmentMouseDown,
 }: PlayBarProps) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800">
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-xl border-t border-gray-800 shadow-2xl">
       <LyricsDisplay
         lyrics={lyrics}
         lyricsLoading={lyricsLoading}
@@ -66,43 +66,47 @@ export const PlayBar = ({
         containerRef={lyricsContainerRef}
         onLineClick={onLyricsLineClick}
       />
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-center gap-4">
+      <div className="px-3 sm:px-4 py-3 sm:py-4">
+        <div className="flex items-center justify-center gap-2 sm:gap-4">
           <button
             onClick={onTogglePlay}
-            className="bg-white hover:bg-gray-200 text-black p-2 rounded-full transition-all flex-shrink-0"
+            className="bg-gradient-to-br from-white to-gray-100 hover:from-gray-100 hover:to-gray-200 text-black p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0 shadow-lg active:scale-95"
           >
-            {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+            {playing ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />}
           </button>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <button
               onClick={onSetLoopStart}
               disabled={!playing || Boolean(activeLoopId)}
-              className={`p-1.5 rounded transition-all ${
-                loopStart !== null ? 'bg-green-500 text-black' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-              } disabled:opacity-30 disabled:cursor-not-allowed`}
-              title="Set loop start"
+              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md ${
+                loopStart !== null 
+                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30' 
+                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+              } disabled:opacity-30 disabled:cursor-not-allowed active:scale-95`}
+              title="Set loop start (S)"
             >
-              <CircleDot className="w-4 h-4" />
+              <CircleDot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={onSetLoopEnd}
               disabled={!playing || Boolean(activeLoopId)}
-              className={`p-1.5 rounded transition-all ${
-                loopEnd !== null ? 'bg-green-500 text-black' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-              } disabled:opacity-30 disabled:cursor-not-allowed`}
-              title="Set loop end"
+              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md ${
+                loopEnd !== null 
+                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30' 
+                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+              } disabled:opacity-30 disabled:cursor-not-allowed active:scale-95`}
+              title="Set loop end (E)"
             >
-              <Circle className="w-4 h-4" />
+              <Circle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             {(loopStart !== null || loopEnd !== null) && (
               <button
                 onClick={onClearLoop}
-                className="p-1.5 rounded bg-gray-700 text-gray-400 hover:bg-gray-600 transition-all"
+                className="p-1 sm:p-1.5 rounded-lg bg-gray-700 text-gray-400 hover:bg-gray-600 transition-all shadow-md active:scale-95"
                 title="Clear loop"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             )}
           </div>
@@ -124,7 +128,11 @@ export const PlayBar = ({
             onSegmentMouseDown={onSegmentMouseDown}
           />
 
-          {usingPreview && <span className="text-gray-500 text-xs flex-shrink-0">Preview</span>}
+          {usingPreview && (
+            <span className="text-gray-500 text-[10px] sm:text-xs flex-shrink-0 hidden sm:inline">
+              Preview
+            </span>
+          )}
         </div>
       </div>
     </div>

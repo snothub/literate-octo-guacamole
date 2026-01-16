@@ -251,46 +251,51 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 p-4 pb-28">
-      <div className="max-w-7xl mx-auto pt-12 flex gap-6 items-stretch">
-        <div className="flex-1 max-w-xl space-y-4">
-          <SearchPanel
-            className="w-full"
-            query={query}
-            onQueryChange={setQuery}
-            onSearch={search}
-            loading={loading}
-            error={error}
-            results={results}
-            selected={selected}
-            usingPreview={usingPreview}
-            deviceId={deviceId}
-            onSelectTrack={handleSelectTrack}
-          />
-          {selected && <LoopList loops={loops} activeLoopId={activeLoopId} onSeekLoop={handleLoopClick} />}
-        </div>
-
-        {selected && (
-          <div className="flex gap-4">
-            <LoopControlsPanel
-              loops={loops}
-              activeLoopId={activeLoopId}
-              loopStart={loopStart}
-              loopEnd={loopEnd}
-              loopEnabled={loopEnabled}
-              onLoopStartChange={handleLoopStartChange}
-              onLoopEndChange={handleLoopEndChange}
-              onLoopEnabledChange={setLoopEnabled}
-              onAddLoop={addLoop}
-              onRemoveLoop={removeLoop}
-              onUpdateLabel={updateLoopLabel}
-              onClearSelection={clearSelection}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-emerald-900/30 to-gray-900 p-3 sm:p-4 md:p-6 pb-32 sm:pb-36">
+      <div className="max-w-7xl mx-auto">
+        {/* Mobile: Stack vertically, Desktop: Side by side */}
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 pt-4 sm:pt-8 md:pt-12">
+          {/* Left column - Search and Loops */}
+          <div className="w-full lg:flex-1 lg:max-w-xl space-y-4">
+            <SearchPanel
+              className="w-full"
+              query={query}
+              onQueryChange={setQuery}
+              onSearch={search}
+              loading={loading}
+              error={error}
+              results={results}
+              selected={selected}
+              usingPreview={usingPreview}
+              deviceId={deviceId}
+              onSelectTrack={handleSelectTrack}
             />
-            <div className="w-80">
-              <RecentTracksPane tracks={recentTracks} onSelectTrack={handleSelectTrack} />
-            </div>
+            {selected && <LoopList loops={loops} activeLoopId={activeLoopId} onSeekLoop={handleLoopClick} />}
           </div>
-        )}
+
+          {/* Right columns - Controls and Recent (desktop side-by-side, mobile stacked) */}
+          {selected && (
+            <div className="flex flex-col sm:flex-row lg:flex-row gap-4">
+              <LoopControlsPanel
+                loops={loops}
+                activeLoopId={activeLoopId}
+                loopStart={loopStart}
+                loopEnd={loopEnd}
+                loopEnabled={loopEnabled}
+                onLoopStartChange={handleLoopStartChange}
+                onLoopEndChange={handleLoopEndChange}
+                onLoopEnabledChange={setLoopEnabled}
+                onAddLoop={addLoop}
+                onRemoveLoop={removeLoop}
+                onUpdateLabel={updateLoopLabel}
+                onClearSelection={clearSelection}
+              />
+              <div className="w-full sm:w-80">
+                <RecentTracksPane tracks={recentTracks} onSelectTrack={handleSelectTrack} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {selected && (

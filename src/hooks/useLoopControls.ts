@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { API_URL } from '../config/spotify';
 import type { LoopSegment } from '../types/ui';
 import { parseTimeInput } from '../utils/time';
@@ -57,6 +57,7 @@ export const useLoopControls = ({
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
   const [loopEnabled, setLoopEnabled] = useState<boolean>(false);
+  const lastLoopTriggerTime = useRef<number>(0);
 
   const activeLoop = useMemo(() => {
     if (!activeLoopId) return null;
@@ -75,6 +76,18 @@ export const useLoopControls = ({
     if (loopStart >= loopEnd) return;
 
     if (progress >= loopEnd) {
+      // Increment loop counter when we hit the end
+      const now = Date.now();
+      if (now - lastLoopTriggerTime.current > 500) {
+        setLoops((prev) =>
+          prev.map((loop) =>
+            loop.id === activeLoopId
+              ? { ...loop, repetitions: (loop.repetitions || 0) + 1 }
+              : loop
+          )
+        );
+        lastLoopTriggerTime.current = now;
+      }
       onSeekToMs(loopStart);
     }
   }, [progress, playing, loopEnabled, loopStart, loopEnd, activeLoopId, onSeekToMs]);
