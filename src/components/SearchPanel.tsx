@@ -1,4 +1,4 @@
-import { ExternalLink, Music, Search } from 'lucide-react';
+import { ExternalLink, Music } from 'lucide-react';
 import type { Track } from '../types/spotify';
 
 type SearchPanelProps = {
@@ -37,22 +37,14 @@ export const SearchPanel = ({
         </h1>
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="mb-4">
         <input
           type="text"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
           placeholder="Search for a song..."
-          className="flex-1 bg-gray-800/80 backdrop-blur-sm text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-700/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none text-sm sm:text-base transition-all"
+          className="w-full bg-gray-800/80 backdrop-blur-sm text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-700/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none text-sm sm:text-base transition-all"
         />
-        <button
-          onClick={onSearch}
-          disabled={loading}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white p-2.5 sm:p-3 rounded-lg transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
-        >
-          <Search className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
       </div>
 
       {error && <p className="text-red-400 text-sm mb-4 px-1">{error}</p>}

@@ -16,6 +16,7 @@ type PlayBarProps = {
   isDragging: boolean;
   magnifier: MagnifierState;
   draggingMarker: 'start' | 'end' | null;
+  segmentWasDragged: boolean;
   lyrics: LyricLine[];
   lyricsLoading: boolean;
   lyricsContainerRef: React.RefObject<HTMLDivElement>;
@@ -43,6 +44,7 @@ export const PlayBar = ({
   isDragging,
   magnifier,
   draggingMarker,
+  segmentWasDragged,
   lyrics,
   lyricsLoading,
   lyricsContainerRef,
@@ -121,6 +123,7 @@ export const PlayBar = ({
             isDragging={isDragging}
             magnifier={magnifier}
             draggingMarker={draggingMarker}
+            segmentWasDragged={segmentWasDragged}
             progressBarRef={progressBarRef}
             onMouseDown={onProgressMouseDown}
             onMarkerMouseDown={onMarkerMouseDown}

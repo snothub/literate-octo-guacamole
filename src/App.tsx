@@ -14,9 +14,11 @@ import { useSpotifyPlayback } from './hooks/useSpotifyPlayback';
 import { useSpotifySearch } from './hooks/useSpotifySearch';
 import type { Track } from './types/spotify';
 import type { LoopSegment } from './types/ui';
+import { extractDominantColor } from './utils/colorExtractor';
 
 export default function App() {
   const [recentTracks, setRecentTracks] = useState<Track[]>([]);
+  const [backgroundColor, setBackgroundColor] = useState<string>('16, 185, 129'); // Default emerald
   const { token, spotifyUserId, error, setError, login, spotifyFetch } = useSpotifyAuth();
   const { query, setQuery, results, loading, search, resetSearch } = useSpotifySearch({
     token,
@@ -48,7 +50,6 @@ export default function App() {
     loopEnd,
     loopEnabled,
     selectLoop,
-    clearSelection,
     addLoop,
     removeLoop,
     setLoopEnabled,
@@ -73,6 +74,7 @@ export default function App() {
   const {
     isDragging,
     draggingMarker,
+    segmentWasDragged,
     magnifier,
     progressBarRef,
     handleMouseDown,
@@ -243,6 +245,18 @@ export default function App() {
     const artistName = track.artists[0]?.name || '';
     void fetchLyrics(track.name, artistName);
     await initializeLoopForTrack(track.id);
+    
+    // Extract color from album cover
+    const imageUrl = track.album.images[0]?.url;
+    if (imageUrl) {
+      try {
+        const color = await extractDominantColor(imageUrl);
+        setBackgroundColor(color);
+      } catch (err) {
+        console.error('Failed to extract color:', err);
+        // Keep current background color on error
+      }
+    }
   };
 
 
@@ -251,7 +265,14 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-emerald-900/30 to-gray-900 p-3 sm:p-4 md:p-6 pb-32 sm:pb-36">
+    <div 
+      className="min-h-screen p-3 sm:p-4 md:p-6 pb-32 sm:pb-36 transition-colors duration-1000"
+      style={{
+        background: `radial-gradient(ellipse at top, rgba(${backgroundColor}, 0.4), transparent 50%), 
+                     radial-gradient(ellipse at bottom, rgba(${backgroundColor}, 0.3), transparent 50%),
+                     linear-gradient(to bottom right, rgb(17, 24, 39), rgba(${backgroundColor}, 0.1), rgb(17, 24, 39))`
+      }}
+    >
       <div className="max-w-[1800px] mx-auto">
         {/* Desktop: 3 columns | Tablet: 2 columns | Mobile: Stack */}
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-4 md:gap-6 pt-4 sm:pt-8 md:pt-12">
@@ -270,7 +291,6 @@ export default function App() {
               onAddLoop={addLoop}
               onRemoveLoop={removeLoop}
               onUpdateLabel={updateLoopLabel}
-              onClearSelection={clearSelection}
             />
           </div>
 
@@ -313,6 +333,7 @@ export default function App() {
           isDragging={isDragging}
           magnifier={magnifier}
           draggingMarker={draggingMarker}
+          segmentWasDragged={segmentWasDragged}
           lyrics={lyrics}
           lyricsLoading={lyricsLoading}
           lyricsContainerRef={lyricsContainerRef}

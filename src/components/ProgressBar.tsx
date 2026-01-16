@@ -11,6 +11,7 @@ type ProgressBarProps = {
   isDragging: boolean;
   magnifier: MagnifierState;
   draggingMarker: 'start' | 'end' | null;
+  segmentWasDragged: boolean;
   progressBarRef: React.RefObject<HTMLDivElement>;
   onMouseDown: (event: React.MouseEvent<HTMLDivElement>) => void;
   onMarkerMouseDown: (event: React.MouseEvent, marker: 'start' | 'end') => void;
@@ -28,6 +29,7 @@ export const ProgressBar = ({
   isDragging,
   magnifier,
   draggingMarker,
+  segmentWasDragged,
   progressBarRef,
   onMouseDown,
   onMarkerMouseDown,
@@ -62,7 +64,10 @@ export const ProgressBar = ({
                 }}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onLoopClick(loop);
+                  // Only trigger click if segment wasn't dragged
+                  if (!segmentWasDragged) {
+                    onLoopClick(loop);
+                  }
                 }}
                 title={loop.label}
               >

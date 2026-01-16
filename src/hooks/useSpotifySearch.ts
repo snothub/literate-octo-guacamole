@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Track } from '../types/spotify';
 
 type UseSpotifySearchArgs = {
@@ -20,6 +20,7 @@ export const useSpotifySearch = ({ token, spotifyFetch, setError }: UseSpotifySe
   const [query, setQuery] = useState<string>('');
   const [results, setResults] = useState<Track[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const debounceTimerRef = useRef<number | null>(null);
 
   const search = async () => {
     if (!query.trim() || !token) return;
@@ -38,6 +39,32 @@ export const useSpotifySearch = ({ token, spotifyFetch, setError }: UseSpotifySe
       setLoading(false);
     }
   };
+
+  // Auto-search with debounce
+  useEffect(() => {
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Clear results if query is empty
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+
+    // Set new timer for auto-search (500ms delay)
+    debounceTimerRef.current = window.setTimeout(() => {
+      void search();
+    }, 500);
+
+    // Cleanup on unmount or query change
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [query, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const resetSearch = () => {
     setResults([]);

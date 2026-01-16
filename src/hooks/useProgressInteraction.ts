@@ -17,6 +17,7 @@ type UseProgressInteractionArgs = {
 type ProgressInteractionState = {
   isDragging: boolean;
   draggingMarker: 'start' | 'end' | null;
+  segmentWasDragged: boolean;
   magnifier: MagnifierState;
   progressBarRef: React.RefObject<HTMLDivElement>;
   handleMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
@@ -39,6 +40,7 @@ export const useProgressInteraction = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [draggingMarker, setDraggingMarker] = useState<'start' | 'end' | null>(null);
   const [isDraggingSegment, setIsDraggingSegment] = useState<boolean>(false);
+  const [segmentWasDragged, setSegmentWasDragged] = useState<boolean>(false);
   const [magnifier, setMagnifier] = useState<MagnifierState>({
     leftPercent: 0,
     timeSec: 0,
@@ -86,6 +88,12 @@ export const useProgressInteraction = ({
     if (draggingLoopRef.current && progressBarRef.current) {
       const rect = progressBarRef.current.getBoundingClientRect();
       const deltaPx = e.clientX - draggingLoopRef.current.startX;
+      
+      // Only mark as dragged if mouse moved more than 3 pixels
+      if (Math.abs(deltaPx) > 3) {
+        setSegmentWasDragged(true);
+      }
+      
       const deltaMs = (deltaPx / rect.width) * duration;
       const length = draggingLoopRef.current.end - draggingLoopRef.current.start;
       const maxStart = Math.max(0, duration - length);
@@ -122,6 +130,10 @@ export const useProgressInteraction = ({
     setIsDragging(false);
     setDraggingMarker(null);
     setIsDraggingSegment(false);
+    // Don't reset segmentWasDragged immediately - let it persist briefly for onClick to check
+    setTimeout(() => {
+      setSegmentWasDragged(false);
+    }, 50);
     draggingLoopRef.current = null;
   };
 
@@ -168,6 +180,7 @@ export const useProgressInteraction = ({
   return {
     isDragging,
     draggingMarker,
+    segmentWasDragged,
     magnifier,
     progressBarRef,
     handleMouseDown,
