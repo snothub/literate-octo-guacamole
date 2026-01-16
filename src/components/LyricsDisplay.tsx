@@ -7,6 +7,7 @@ type LyricsDisplayProps = {
   containerRef: React.RefObject<HTMLDivElement>;
   className?: string;
   heightClassName?: string;
+  onLineClick?: (timeMs: number) => void;
 };
 
 export const LyricsDisplay = ({
@@ -16,6 +17,7 @@ export const LyricsDisplay = ({
   containerRef,
   className,
   heightClassName,
+  onLineClick,
 }: LyricsDisplayProps) => {
   const containerClassName = className ?? 'max-w-4xl mx-auto';
   const heightClass = heightClassName ?? 'h-32';
@@ -52,7 +54,8 @@ export const LyricsDisplay = ({
                 isCurrentLine
                   ? 'text-white font-bold text-xl scale-105 drop-shadow'
                   : 'text-gray-400 text-sm font-medium'
-              }`}
+              } ${onLineClick ? 'cursor-pointer hover:text-white' : ''}`}
+              onClick={() => onLineClick?.(line.time)}
             >
               {line.text}
             </p>

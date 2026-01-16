@@ -19,6 +19,7 @@ type PlayBarProps = {
   lyrics: LyricLine[];
   lyricsLoading: boolean;
   lyricsContainerRef: React.RefObject<HTMLDivElement>;
+  onLyricsLineClick?: (timeMs: number) => void;
   progressBarRef: React.RefObject<HTMLDivElement>;
   onTogglePlay: () => void;
   onSetLoopStart: () => void;
@@ -45,6 +46,7 @@ export const PlayBar = ({
   lyrics,
   lyricsLoading,
   lyricsContainerRef,
+  onLyricsLineClick,
   progressBarRef,
   onTogglePlay,
   onSetLoopStart,
@@ -62,6 +64,7 @@ export const PlayBar = ({
         lyricsLoading={lyricsLoading}
         progress={progress}
         containerRef={lyricsContainerRef}
+        onLineClick={onLyricsLineClick}
       />
       <div className="px-4 py-3">
         <div className="flex items-center justify-center gap-4">

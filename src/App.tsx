@@ -309,6 +309,9 @@ export default function App() {
           lyrics={lyrics}
           lyricsLoading={lyricsLoading}
           lyricsContainerRef={lyricsContainerRef}
+          onLyricsLineClick={(timeMs) => {
+            void playFromPosition(timeMs);
+          }}
           progressBarRef={progressBarRef}
           onTogglePlay={togglePlay}
           onSetLoopStart={setLoopStartPoint}

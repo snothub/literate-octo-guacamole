@@ -130,7 +130,7 @@ export const LoopControlsPanel = ({
             <p>S: set start · E: set end · L: toggle loop · P: play from start</p>
             <p>Option+←/→: prev/next loop</p>
             <p>Shift+←/→: nudge start ±250ms (±50ms without Shift)</p>
-            <p>Ctrl+←/→: nudge end ±250ms (±50ms without Shift)</p>
+            <p>CMD+←/→: nudge end ±250ms (±50ms without Shift)</p>
           </div>
 
         </div>
