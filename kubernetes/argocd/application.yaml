@@ -21,7 +21,7 @@ spec:
         frontend:
           image:
             repository: danijels/music-man
-            tag: v1.0.7  # Updated automatically by GitHub Actions on release
+            tag: v1.0.8  # Updated automatically by GitHub Actions on release
           env:
             spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
             apiUrl: "http://backend:4000"
@@ -29,7 +29,7 @@ spec:
         backend:
           image:
             repository: danijels/music-man-api
-            tag: v1.0.7  # Updated automatically by GitHub Actions on release
+            tag: v1.0.8  # Updated automatically by GitHub Actions on release
 
         # Ingress configuration (optional)
         ingress:
