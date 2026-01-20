@@ -1,5 +1,5 @@
 const express = require('express');
-const cors = require('cors');
+const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 require('dotenv').config();
 
@@ -7,8 +7,10 @@ const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
 app.use(express.json());
+
+// Serve static files from public/ (built React app)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -70,6 +72,18 @@ app.post('/api/loop', async (req, res) => {
   } catch (error) {
     console.error('Save loop data error:', error);
     res.status(500).json({ error: 'Failed to save loop data' });
+  }
+});
+
+// SPA fallback - serve index.html for all non-API routes
+// MUST come after API routes and static middleware
+// Express 5 compatible syntax
+app.use((req, res, next) => {
+  // Only handle GET requests that aren't API routes or static files
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } else {
+    next();
   }
 });
 
