@@ -1,34 +1,40 @@
-# Dockerfile
-FROM node:20-alpine AS builder
-
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with optimization flags
+RUN npm ci --prefer-offline --no-audit --progress=false
 
-# Copy source code
-COPY . .
+# Copy source
+COPY index.html vite.config.ts tsconfig.json ./
+COPY src ./src
 
-# Build the app
+# Build
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+# Stage 2: Backend with frontend
+FROM node:20-alpine
+WORKDIR /app
 
-# Copy built assets from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Install openssl (needed for Prisma)
+RUN apk add --no-cache openssl
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy backend files
+COPY backend/package.json backend/package-lock.json ./
+COPY backend/prisma ./prisma/
 
-# Copy entrypoint script for runtime configuration
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Install backend dependencies
+RUN npm ci --prefer-offline --no-audit --progress=false --only=production && \
+    npx prisma generate
 
-EXPOSE 80
+# Copy backend code
+COPY backend/index.js ./
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+# Copy frontend build
+COPY --from=frontend-builder /app/dist ./public
+
+EXPOSE 4000
+CMD ["node", "index.js"]

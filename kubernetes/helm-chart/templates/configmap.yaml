@@ -6,12 +6,7 @@ metadata:
   labels:
     app: music-man
 data:
-  # Frontend configuration (for reference, values are baked into image)
-  SPOTIFY_CLIENT_ID: {{ .Values.frontend.env.spotifyClientId | quote }}
-  API_URL: {{ .Values.frontend.env.apiUrl | quote }}
-
-  # Backend configuration
-  PORT: {{ .Values.backend.env.port | quote }}
+  # Log level configuration
   LOG_LEVEL: {{ .Values.config.logLevel | quote }}
 
   # Database configuration

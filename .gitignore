@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-ssr/
 private/
+backend/public/
 
 # Environment variables
 .env

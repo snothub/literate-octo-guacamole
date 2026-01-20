@@ -18,18 +18,12 @@ spec:
       - values.yaml
       values: |
         # Override Docker Hub username
-        frontend:
+        app:
           image:
             repository: danijels/music-man
             tag: v1.1.0  # Updated automatically by GitHub Actions on release
           env:
             spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
-            apiUrl: "http://backend:4000"
-
-        backend:
-          image:
-            repository: danijels/music-man-api
-            tag: v1.1.0  # Updated automatically by GitHub Actions on release
 
         # Ingress configuration (optional)
         ingress:
@@ -39,10 +33,6 @@ spec:
               paths:
                 - path: /
                   pathType: Prefix
-                  backend: frontend
-                - path: /api
-                  pathType: Prefix
-                  backend: backend
 
       parameters:
       - name: secrets.databasePassword

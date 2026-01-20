@@ -5,3 +5,10 @@ dist
 README.md
 .env
 *.log
+.vscode
+.idea
+*.md
+coverage
+.DS_Store
+backend/node_modules
+backend/dist

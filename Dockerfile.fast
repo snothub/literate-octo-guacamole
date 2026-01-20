@@ -1,0 +1,23 @@
+# Fast Dockerfile - assumes you've built locally first
+# Usage: npm run build && npm ci --prefix backend && docker build -f Dockerfile.fast .
+
+FROM node:20-alpine
+WORKDIR /app
+
+# Install openssl for Prisma
+RUN apk add --no-cache openssl
+
+# Copy pre-built frontend
+COPY dist ./public
+
+# Copy backend
+COPY backend/package.json backend/package-lock.json ./
+COPY backend/node_modules ./node_modules
+COPY backend/prisma ./prisma/
+COPY backend/index.js ./
+
+# Generate Prisma client
+RUN npx prisma generate
+
+EXPOSE 4000
+CMD ["node", "index.js"]

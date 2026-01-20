@@ -1,23 +1,23 @@
-{{- if .Values.backend.enabled }}
+{{- if .Values.app.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.backend.name }}
+  name: {{ .Values.app.name }}
   namespace: {{ .Values.namespace }}
   labels:
     app: music-man
-    component: backend
+    component: app
 spec:
-  replicas: {{ .Values.backend.replicaCount }}
+  replicas: {{ .Values.app.replicaCount }}
   selector:
     matchLabels:
       app: music-man
-      component: backend
+      component: app
   template:
     metadata:
       labels:
         app: music-man
-        component: backend
+        component: app
     spec:
       initContainers:
       - name: wait-for-db
@@ -31,28 +31,27 @@ spec:
             sleep 2
           done
       containers:
-      - name: backend
-        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+      - name: app
+        image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         ports:
         - name: http
-          containerPort: {{ .Values.backend.service.targetPort }}
+          containerPort: {{ .Values.app.service.targetPort }}
           protocol: TCP
         env:
         - name: PORT
-          valueFrom:
-            configMapKeyRef:
-              name: music-man-config
-              key: PORT
+          value: "{{ .Values.app.env.port }}"
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
               name: music-man-secrets
               key: DATABASE_URL
+        - name: VITE_SPOTIFY_CLIENT_ID
+          value: "{{ .Values.app.env.spotifyClientId }}"
         resources:
-          {{- toYaml .Values.backend.resources | nindent 10 }}
+          {{- toYaml .Values.app.resources | nindent 10 }}
         livenessProbe:
-          {{- toYaml .Values.backend.livenessProbe | nindent 10 }}
+          {{- toYaml .Values.app.livenessProbe | nindent 10 }}
         readinessProbe:
-          {{- toYaml .Values.backend.readinessProbe | nindent 10 }}
+          {{- toYaml .Values.app.readinessProbe | nindent 10 }}
 {{- end }}

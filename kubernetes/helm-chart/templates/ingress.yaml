@@ -32,9 +32,9 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ .backend }}
+                name: {{ $.Values.app.name }}
                 port:
-                  number: {{ if eq .backend "frontend" }}{{ $.Values.frontend.service.port }}{{ else }}{{ $.Values.backend.service.port }}{{ end }}
+                  number: {{ $.Values.app.service.port }}
           {{- end }}
     {{- end }}
 {{- end }}

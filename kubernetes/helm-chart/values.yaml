@@ -6,38 +6,13 @@
 namespace: music-man
 imagePullPolicy: IfNotPresent
 
-# Frontend configuration
-frontend:
+# Unified app (frontend + backend)
+app:
   enabled: true
-  name: frontend
+  name: app
   replicaCount: 1
   image:
     repository: danijels/music-man
-    tag: latest
-  service:
-    type: ClusterIP
-    port: 80
-    targetPort: 80
-  resources:
-    requests:
-      memory: "128Mi"
-      cpu: "100m"
-    limits:
-      memory: "256Mi"
-      cpu: "200m"
-  env:
-    # Frontend environment variables are configured at runtime
-    # via docker-entrypoint.sh which generates config.json
-    spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
-    apiUrl: "http://backend:4000"  # Kubernetes service URL
-
-# Backend API configuration
-backend:
-  enabled: true
-  name: backend
-  replicaCount: 1
-  image:
-    repository: danijels/music-man-api
     tag: latest
   service:
     type: ClusterIP
@@ -52,6 +27,7 @@ backend:
       cpu: "500m"
   env:
     port: "4000"
+    spotifyClientId: "011c5f27eef64dd0b6f65ca673215a58"
   livenessProbe:
     httpGet:
       path: /health
@@ -60,7 +36,7 @@ backend:
     periodSeconds: 10
   readinessProbe:
     httpGet:
-      path: /health
+      path: /
       port: 4000
     initialDelaySeconds: 10
     periodSeconds: 5
@@ -125,10 +101,6 @@ ingress:
     paths:
     - path: /
       pathType: Prefix
-      backend: frontend
-    - path: /api
-      pathType: Prefix
-      backend: backend
   tls:
   - secretName: music-man-tls
     hosts:
