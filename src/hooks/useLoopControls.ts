@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { API_URL } from '../config/spotify';
+import { getApiUrl } from '../config/spotify';
 import { parseTimeInput } from '../utils/time';
 
 type UseLoopControlsArgs = {
@@ -66,7 +66,7 @@ export const useLoopControls = ({
     if (!spotifyUserId) return;
 
     try {
-      await fetch(`${API_URL}/api/loop`, {
+      await fetch(`${getApiUrl()}/api/loop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export const useLoopControls = ({
     if (!spotifyUserId) return null;
 
     try {
-      const response = await fetch(`${API_URL}/api/loop/${spotifyUserId}/${trackId}`);
+      const response = await fetch(`${getApiUrl()}/api/loop/${spotifyUserId}/${trackId}`);
 
       if (!response.ok) return null;
 

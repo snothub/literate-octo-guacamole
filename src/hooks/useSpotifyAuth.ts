@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CLIENT_ID, REDIRECT_URI, SCOPES } from '../config/spotify';
+import { getClientId, REDIRECT_URI, SCOPES } from '../config/spotify';
 import { base64encode, generateRandomString, sha256 } from '../utils/pkce';
 
 type SpotifyAuthState = {
@@ -59,7 +59,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          client_id: CLIENT_ID,
+          client_id: getClientId(),
           grant_type: 'authorization_code',
           code,
           redirect_uri: REDIRECT_URI,
@@ -111,7 +111,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          client_id: CLIENT_ID,
+          client_id: getClientId(),
           grant_type: 'refresh_token',
           refresh_token: refreshToken,
         }),
@@ -191,7 +191,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
     localStorage.setItem('code_verifier', codeVerifier);
 
     const authUrl = new URL('https://accounts.spotify.com/authorize');
-    authUrl.searchParams.append('client_id', CLIENT_ID);
+    authUrl.searchParams.append('client_id', getClientId());
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
     authUrl.searchParams.append('scope', SCOPES);
