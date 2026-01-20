@@ -77,10 +77,20 @@ app.post('/api/loop', async (req, res) => {
 
 // SPA fallback - serve index.html for all non-API routes
 // MUST come after API routes and static middleware
-// Express 5 compatible syntax
+// Only serve index.html for routes that don't look like files (no extension)
 app.use((req, res, next) => {
-  // Only handle GET requests that aren't API routes or static files
-  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+  // Skip API routes
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+
+  // Skip requests for files with extensions (CSS, JS, images, etc.)
+  if (path.extname(req.path)) {
+    return next();
+  }
+
+  // Serve index.html for all other GET requests (SPA routes)
+  if (req.method === 'GET') {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   } else {
     next();
