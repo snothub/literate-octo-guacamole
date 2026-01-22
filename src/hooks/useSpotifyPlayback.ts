@@ -46,7 +46,7 @@ export const useSpotifyPlayback = ({
 
     window.onSpotifyWebPlaybackSDKReady = () => {
       const p = new window.Spotify.Player({
-        name: 'Spotify Search App',
+        name: 'Music Man App',
         getOAuthToken: (cb) => cb(token),
         volume: 0.5,
       });

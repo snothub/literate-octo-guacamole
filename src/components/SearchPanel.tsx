@@ -30,7 +30,7 @@ export const SearchPanel = ({
     <div className="flex-1 max-w-xl">
       <div className="flex items-center justify-center gap-2 mb-8">
         <Music className="w-8 h-8 text-green-500" />
-        <h1 className="text-2xl font-bold text-white">Spotify Search</h1>
+        <h1 className="text-2xl font-bold text-white">Music Man</h1>
       </div>
 
       <div className="flex gap-2 mb-4">
