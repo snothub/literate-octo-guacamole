@@ -72,6 +72,7 @@ export const HelpPanel = () => {
           <p className="text-xs text-gray-500 pt-1">
             💡 Tip: Create multiple loops per track and fine-tune with keyboard shortcuts!
           </p>
+          </div>
         </div>
       )}
     </div>
