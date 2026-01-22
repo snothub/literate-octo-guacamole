@@ -23,7 +23,7 @@ export default function App() {
   const [recentTracks, setRecentTracks] = useState<Track[]>([]);
   const [backgroundColor, setBackgroundColor] = useState<string>('16, 185, 129'); // Default emerald
   const { token, spotifyUserId, error, setError, login, spotifyFetch } = useSpotifyAuth();
-  const { query, setQuery, results, loading, search, resetSearch } = useSpotifySearch({
+  const { query, setQuery, results, loading, resetSearch } = useSpotifySearch({
     token,
     spotifyFetch,
     setError,

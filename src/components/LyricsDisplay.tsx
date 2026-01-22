@@ -25,30 +25,30 @@ export const LyricsDisplay = ({
   const containerClassName = className ?? 'max-w-4xl mx-auto';
   const heightClass = heightClassName ?? 'h-32';
   
-  const increaseSize = () => setTextSize((prev) => Math.min(prev + 1, 2));
-  const decreaseSize = () => setTextSize((prev) => Math.max(prev - 1, -2));
+  const increaseSize = () => setTextSize((prev) => Math.min(prev + 1, 2) as -2 | -1 | 0 | 1 | 2);
+  const decreaseSize = () => setTextSize((prev) => Math.max(prev - 1, -2) as -2 | -1 | 0 | 1 | 2);
   
   // Calculate text sizes based on textSize state
   const getCurrentSize = () => {
-    const sizes = {
+    const sizes: Record<string, string> = {
       '-2': 'text-lg',
       '-1': 'text-xl',
       '0': 'text-2xl',
       '1': 'text-3xl',
       '2': 'text-4xl',
     };
-    return sizes[textSize as keyof typeof sizes] || 'text-2xl';
+    return sizes[String(textSize)] || 'text-2xl';
   };
-  
+
   const getInactiveSize = () => {
-    const sizes = {
+    const sizes: Record<string, string> = {
       '-2': 'text-xs',
       '-1': 'text-sm',
       '0': 'text-base',
       '1': 'text-lg',
       '2': 'text-xl',
     };
-    return sizes[textSize as keyof typeof sizes] || 'text-base';
+    return sizes[String(textSize)] || 'text-base';
   };
   
   if (lyricsLoading) {
