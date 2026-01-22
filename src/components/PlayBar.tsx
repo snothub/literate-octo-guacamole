@@ -67,9 +67,9 @@ export const PlayBar = ({
   const [activeTab, setActiveTab] = useState<'controls' | 'lyrics'>('controls');
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-xl border-t border-gray-800 shadow-2xl">
+    <div className="fixed bottom-0 left-0 right-0 h-80 bg-gray-900/95 backdrop-blur-xl border-t border-gray-800 shadow-2xl flex flex-col">
       {/* Tabs */}
-      <div className="flex border-b border-gray-800">
+      <div className="flex border-b border-gray-800 flex-shrink-0">
         <button
           onClick={() => setActiveTab('controls')}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-all ${
@@ -92,55 +92,58 @@ export const PlayBar = ({
         </button>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === 'controls' && (
-        <>
-          <ProgressBar
-            progress={progress}
-            duration={duration}
-            loopStart={loopStart}
-            loopEnd={loopEnd}
-            loops={loops}
-            activeLoopId={activeLoopId}
-            isDragging={isDragging}
-            magnifier={magnifier}
-            draggingMarker={draggingMarker}
-            segmentWasDragged={segmentWasDragged}
-            progressBarRef={progressBarRef}
-            onMouseDown={onProgressMouseDown}
-            onMarkerMouseDown={onMarkerMouseDown}
-            onLoopClick={onLoopClick}
-            onSegmentMouseDown={onSegmentMouseDown}
-          />
-          <PlayControls
-            playing={playing}
-            loopStart={loopStart}
-            loopEnd={loopEnd}
-            activeLoopId={activeLoopId}
-            duration={duration}
-            progress={progress}
-            onTogglePlay={onTogglePlay}
-            onSetLoopStart={onSetLoopStart}
-            onSetLoopEnd={onSetLoopEnd}
-            onClearLoop={onClearLoop}
-            onSkipBack={onSkipBack}
-            onSkipForward={onSkipForward}
-          />
-        </>
-      )}
+      {/* Tab Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === 'controls' && (
+          <>
+            <ProgressBar
+              progress={progress}
+              duration={duration}
+              loopStart={loopStart}
+              loopEnd={loopEnd}
+              loops={loops}
+              activeLoopId={activeLoopId}
+              isDragging={isDragging}
+              magnifier={magnifier}
+              draggingMarker={draggingMarker}
+              segmentWasDragged={segmentWasDragged}
+              progressBarRef={progressBarRef}
+              onMouseDown={onProgressMouseDown}
+              onMarkerMouseDown={onMarkerMouseDown}
+              onLoopClick={onLoopClick}
+              onSegmentMouseDown={onSegmentMouseDown}
+            />
+            <PlayControls
+              playing={playing}
+              loopStart={loopStart}
+              loopEnd={loopEnd}
+              activeLoopId={activeLoopId}
+              duration={duration}
+              progress={progress}
+              onTogglePlay={onTogglePlay}
+              onSetLoopStart={onSetLoopStart}
+              onSetLoopEnd={onSetLoopEnd}
+              onClearLoop={onClearLoop}
+              onSkipBack={onSkipBack}
+              onSkipForward={onSkipForward}
+            />
+          </>
+        )}
 
-      {activeTab === 'lyrics' && (
-        <LyricsDisplay
-          lyrics={lyrics}
-          lyricsLoading={lyricsLoading}
-          progress={progress}
-          containerRef={lyricsContainerRef}
-          onLineClick={onLyricsLineClick}
-        />
-      )}
+        {activeTab === 'lyrics' && (
+          <LyricsDisplay
+            lyrics={lyrics}
+            lyricsLoading={lyricsLoading}
+            progress={progress}
+            containerRef={lyricsContainerRef}
+            onLineClick={onLyricsLineClick}
+          />
+        )}
+      </div>
 
+      {/* Preview Mode Indicator - Fixed at bottom */}
       {usingPreview && (
-        <div className="px-3 sm:px-4 py-2 text-center">
+        <div className="px-3 sm:px-4 py-2 text-center border-t border-gray-800 flex-shrink-0">
           <span className="text-gray-500 text-[10px] sm:text-xs">
             Preview Mode
           </span>
