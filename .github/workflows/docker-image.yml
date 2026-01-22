@@ -49,6 +49,7 @@ jobs:
     - name: Build unified app Docker image
       run: |
         docker build . --file Dockerfile \
+          --build-arg VERSION=${{ env.VERSION }} \
           --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.VERSION }} \
           --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:latest
 

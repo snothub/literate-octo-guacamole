@@ -1,8 +1,25 @@
 import { ChevronDown, HelpCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export const HelpPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      try {
+        const response = await fetch('/version.json');
+        if (response.ok) {
+          const data = await response.json();
+          setVersion(data.version);
+        }
+      } catch (err) {
+        // Version file not found or error reading it - silently fail
+        console.debug('Version file not available');
+      }
+    };
+    fetchVersion();
+  }, []);
 
   return (
     <>
@@ -22,7 +39,10 @@ export const HelpPanel = () => {
         <div className="bg-gradient-to-br from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-gray-700/30 space-y-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="text-center space-y-2">
             <div className="text-4xl">🎵</div>
-            <h3 className="text-base sm:text-lg font-bold text-white">Spotify Loop Trainer</h3>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white">Spotify Loop Trainer</h3>
+              {version && <p className="text-xs text-gray-500 mt-1">v{version}</p>}
+            </div>
             <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
               Perfect for practicing music, dance choreography, or learning lyrics. Create custom loops to repeat any section of a song.
             </p>

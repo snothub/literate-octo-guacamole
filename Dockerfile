@@ -15,6 +15,10 @@ COPY src ./src
 # Build
 RUN npm run build
 
+# Write version file if VERSION build arg is provided
+ARG VERSION
+RUN if [ -n "$VERSION" ]; then echo "{\"version\":\"$VERSION\"}" > dist/version.json; fi
+
 # Stage 2: Backend with frontend
 FROM node:20-alpine
 WORKDIR /app
