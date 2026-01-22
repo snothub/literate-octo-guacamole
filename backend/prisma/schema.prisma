@@ -9,10 +9,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model RecentTrack {
+  id            String   @id @default(uuid())
+  spotifyUserId String
+  trackId       String
+  trackData     Json     // Full Track object as JSON
+  playedAt      DateTime @default(now()) @updatedAt
+
+  @@unique([spotifyUserId, trackId])
+  @@index([spotifyUserId, playedAt(sort: Desc)])
+  @@map("recent_tracks")
+}
+
 model LoopData {
   id            String   @id @default(uuid())
   spotifyUserId String
   trackId       String
+  segments      Json?    // Array of LoopSegment objects
+  activeLoopId  String?  // ID of currently active loop
   loopStart     Float?
   loopEnd       Float?
   loopEnabled   Boolean  @default(false)

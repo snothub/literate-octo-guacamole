@@ -92,27 +92,19 @@ export const useLoopControls = ({
   }, [progress, playing, loopEnabled, loopStart, loopEnd, activeLoopId, onSeekToMs]);
 
   useEffect(() => {
-    if (!selectedTrackId) return;
-    const storageKey = `loop_segments_${spotifyUserId || 'anon'}_${selectedTrackId}`;
-    localStorage.setItem(storageKey, JSON.stringify(loops));
-  }, [loops, selectedTrackId, spotifyUserId]);
-
-  useEffect(() => {
     if (selectedTrackId && spotifyUserId) {
       const timeoutId = setTimeout(() => {
-        const start = activeLoopId ? loopStart : null;
-        const end = activeLoopId ? loopEnd : null;
-        void saveLoopData(selectedTrackId, start, end, loopEnabled);
+        void saveLoopData(selectedTrackId, loops, activeLoopId, loopEnabled);
       }, 500);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedTrackId, loopStart, loopEnd, loopEnabled, spotifyUserId, activeLoopId]);
+  }, [selectedTrackId, loops, loopEnabled, spotifyUserId, activeLoopId]);
 
   const saveLoopData = async (
     trackId: string,
-    start: number | null,
-    end: number | null,
+    segments: LoopSegment[],
+    activeId: string | null,
     enabled: boolean
   ) => {
     if (!spotifyUserId) return;
@@ -126,8 +118,8 @@ export const useLoopControls = ({
         body: JSON.stringify({
           spotifyUserId,
           trackId,
-          loopStart: start,
-          loopEnd: end,
+          segments: segments.length > 0 ? segments : null,
+          activeLoopId: activeId,
           loopEnabled: enabled,
         }),
       });
@@ -145,7 +137,17 @@ export const useLoopControls = ({
       if (!response.ok) return null;
 
       const data = await response.json();
-      return data;
+      if (!data) return null;
+
+      // Return data with segments, handling both new and old format
+      return {
+        segments: data.segments || null,
+        activeLoopId: data.activeLoopId || null,
+        loopEnabled: data.loopEnabled || false,
+        // For backward compatibility, also include old fields
+        loopStart: data.loopStart,
+        loopEnd: data.loopEnd,
+      };
     } catch (err) {
       console.error('Error loading loop data:', err);
       return null;
@@ -159,34 +161,33 @@ export const useLoopControls = ({
     setLoopEnabled(false);
     setActiveLoopId(null);
 
-    const storageKey = `loop_segments_${spotifyUserId || 'anon'}_${trackId}`;
-    const storedLoops = localStorage.getItem(storageKey);
-    if (storedLoops) {
-      try {
-        const parsed = JSON.parse(storedLoops) as LoopSegment[];
-        setLoops(parsed);
-        if (parsed.length > 0) {
-          setActiveLoopId(parsed[0].id);
-        }
-        return;
-      } catch {
-        localStorage.removeItem(storageKey);
-      }
-    }
-
     if (spotifyUserId) {
       const savedLoopData = await loadLoopData(trackId);
-      if (savedLoopData?.loopStart !== null && savedLoopData?.loopEnd !== null) {
-        const loop: LoopSegment = {
-          id: buildLoopId(),
-          start: savedLoopData.loopStart,
-          end: savedLoopData.loopEnd,
-          color: LOOP_COLORS[0],
-          label: 'Loop 1',
-        };
-        setLoops([loop]);
-        setActiveLoopId(loop.id);
-        setLoopEnabled(savedLoopData.loopEnabled);
+      if (savedLoopData) {
+        // Load new format (segments array)
+        if (savedLoopData.segments && Array.isArray(savedLoopData.segments)) {
+          const segments = savedLoopData.segments as LoopSegment[];
+          setLoops(segments);
+          if (savedLoopData.activeLoopId) {
+            setActiveLoopId(savedLoopData.activeLoopId);
+          } else if (segments.length > 0) {
+            setActiveLoopId(segments[0].id);
+          }
+          setLoopEnabled(savedLoopData.loopEnabled);
+        }
+        // Fallback to old format (single loop from loopStart/loopEnd)
+        else if (savedLoopData.loopStart !== null && savedLoopData.loopEnd !== null) {
+          const loop: LoopSegment = {
+            id: buildLoopId(),
+            start: savedLoopData.loopStart,
+            end: savedLoopData.loopEnd,
+            color: LOOP_COLORS[0],
+            label: 'Loop 1',
+          };
+          setLoops([loop]);
+          setActiveLoopId(loop.id);
+          setLoopEnabled(savedLoopData.loopEnabled);
+        }
       }
     }
   };

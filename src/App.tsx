@@ -10,6 +10,7 @@ import { useGlobalSpacebar } from './hooks/useGlobalSpacebar';
 import { useLoopControls } from './hooks/useLoopControls';
 import { useLyrics } from './hooks/useLyrics';
 import { useProgressInteraction } from './hooks/useProgressInteraction';
+import { useRecentTracks } from './hooks/useRecentTracks';
 import { useRuntimeConfig } from './hooks/useRuntimeConfig';
 import { useSpotifyAuth } from './hooks/useSpotifyAuth';
 import { useSpotifyPlayback } from './hooks/useSpotifyPlayback';
@@ -20,9 +21,9 @@ import { extractDominantColor } from './utils/colorExtractor';
 
 export default function App() {
   const { config, loading: configLoading } = useRuntimeConfig();
-  const [recentTracks, setRecentTracks] = useState<Track[]>([]);
   const [backgroundColor, setBackgroundColor] = useState<string>('16, 185, 129'); // Default emerald
   const { token, spotifyUserId, error, setError, login, spotifyFetch } = useSpotifyAuth();
+  const { recentTracks, addRecentTrack } = useRecentTracks({ spotifyUserId });
   const { query, setQuery, results, loading, resetSearch } = useSpotifySearch({
     token,
     spotifyFetch,
@@ -99,26 +100,6 @@ export default function App() {
   useGlobalSpacebar(() => {
     void togglePlay();
   });
-
-  useEffect(() => {
-    const stored = localStorage.getItem('recent_tracks');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as Track[];
-        setRecentTracks(parsed);
-      } catch {
-        localStorage.removeItem('recent_tracks');
-      }
-    }
-  }, []);
-
-  const updateRecentTracks = (track: Track) => {
-    setRecentTracks((prev) => {
-      const next = [track, ...prev.filter((t) => t.id !== track.id)].slice(0, 10);
-      localStorage.setItem('recent_tracks', JSON.stringify(next));
-      return next;
-    });
-  };
 
   const loopIndexById = useMemo(() => {
     return new Map(loops.map((loop, index) => [loop.id, index]));
@@ -254,12 +235,12 @@ export default function App() {
     resetSearch();
     clearLyrics();
     setError('');
-    updateRecentTracks(track);
+    void addRecentTrack(track);
 
     const artistName = track.artists[0]?.name || '';
     void fetchLyrics(track.name, artistName);
     await initializeLoopForTrack(track.id);
-    
+
     // Extract color from album cover
     const imageUrl = track.album.images[0]?.url;
     if (imageUrl) {

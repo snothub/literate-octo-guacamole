@@ -16,7 +16,8 @@
       "Bash(findstr:*)",
       "Bash(git push:*)",
       "Bash(kubectl get:*)",
-      "Bash(dir /b C:devhackathon)"
+      "Bash(dir /b C:devhackathon)",
+      "Bash(npx prisma validate:*)"
     ]
   }
 }

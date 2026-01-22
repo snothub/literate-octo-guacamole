@@ -17,6 +17,60 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Get recent tracks
+app.get('/api/recent-tracks/:spotifyUserId', async (req, res) => {
+  try {
+    const { spotifyUserId } = req.params;
+
+    const recentTracks = await prisma.recentTrack.findMany({
+      where: { spotifyUserId },
+      orderBy: { playedAt: 'desc' },
+      take: 10,
+    });
+
+    // Convert JSON trackData back to Track objects and return array
+    const tracks = recentTracks.map(rt => JSON.parse(JSON.stringify(rt.trackData)));
+    res.json(tracks);
+  } catch (error) {
+    console.error('Get recent tracks error:', error);
+    res.status(500).json({ error: 'Failed to fetch recent tracks' });
+  }
+});
+
+// Save recent track
+app.post('/api/recent-tracks', async (req, res) => {
+  try {
+    const { spotifyUserId, track } = req.body;
+
+    if (!spotifyUserId || !track) {
+      return res.status(400).json({ error: 'spotifyUserId and track required' });
+    }
+
+    const recentTrack = await prisma.recentTrack.upsert({
+      where: {
+        spotifyUserId_trackId: {
+          spotifyUserId,
+          trackId: track.id,
+        },
+      },
+      update: {
+        trackData: track,
+        playedAt: new Date(),
+      },
+      create: {
+        spotifyUserId,
+        trackId: track.id,
+        trackData: track,
+      },
+    });
+
+    res.json(recentTrack);
+  } catch (error) {
+    console.error('Save recent track error:', error);
+    res.status(500).json({ error: 'Failed to save recent track' });
+  }
+});
+
 // Get loop data for a track
 app.get('/api/loop/:spotifyUserId/:trackId', async (req, res) => {
   try {
@@ -41,7 +95,7 @@ app.get('/api/loop/:spotifyUserId/:trackId', async (req, res) => {
 // Save/update loop data
 app.post('/api/loop', async (req, res) => {
   try {
-    const { spotifyUserId, trackId, loopStart, loopEnd, loopEnabled } = req.body;
+    const { spotifyUserId, trackId, segments, activeLoopId, loopStart, loopEnd, loopEnabled } = req.body;
 
     if (!spotifyUserId || !trackId) {
       return res.status(400).json({ error: 'spotifyUserId and trackId required' });
@@ -55,16 +109,21 @@ app.post('/api/loop', async (req, res) => {
         },
       },
       update: {
-        loopStart,
-        loopEnd,
-        loopEnabled,
+        // Support both new format (segments) and old format (loopStart, loopEnd, loopEnabled)
+        ...(segments !== undefined && { segments }),
+        ...(activeLoopId !== undefined && { activeLoopId }),
+        ...(loopStart !== undefined && { loopStart }),
+        ...(loopEnd !== undefined && { loopEnd }),
+        ...(loopEnabled !== undefined && { loopEnabled }),
       },
       create: {
         spotifyUserId,
         trackId,
-        loopStart,
-        loopEnd,
-        loopEnabled,
+        ...(segments !== undefined && { segments }),
+        ...(activeLoopId !== undefined && { activeLoopId }),
+        ...(loopStart !== undefined && { loopStart }),
+        ...(loopEnd !== undefined && { loopEnd }),
+        ...(loopEnabled !== undefined && { loopEnabled }),
       },
     });
 
