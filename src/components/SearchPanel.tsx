@@ -5,7 +5,6 @@ type SearchPanelProps = {
   className?: string;
   query: string;
   onQueryChange: (value: string) => void;
-  onSearch: () => void;
   loading: boolean;
   error: string;
   results: Track[];
@@ -19,7 +18,6 @@ export const SearchPanel = ({
   className,
   query,
   onQueryChange,
-  onSearch,
   loading,
   error,
   results,

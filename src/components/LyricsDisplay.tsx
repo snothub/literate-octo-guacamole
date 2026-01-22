@@ -21,7 +21,7 @@ export const LyricsDisplay = ({
   heightClassName,
   onLineClick,
 }: LyricsDisplayProps) => {
-  const [textSize, setTextSize] = useState<number>(1); // -2 to +2 range
+  const [textSize, setTextSize] = useState<-2 | -1 | 0 | 1 | 2>(0);
   const containerClassName = className ?? 'max-w-4xl mx-auto';
   const heightClass = heightClassName ?? 'h-32';
   

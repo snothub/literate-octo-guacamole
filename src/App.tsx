@@ -331,7 +331,6 @@ export default function App() {
               className="w-full"
               query={query}
               onQueryChange={setQuery}
-              onSearch={search}
               loading={loading}
               error={error}
               results={results}
