@@ -1,0 +1,38 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model RecentTrack {
+  id            String   @id @default(uuid())
+  spotifyUserId String
+  trackId       String
+  trackData     Json     // Full Track object as JSON
+  playedAt      DateTime @default(now()) @updatedAt
+
+  @@unique([spotifyUserId, trackId])
+  @@index([spotifyUserId, playedAt(sort: Desc)])
+  @@map("recent_tracks")
+}
+
+model LoopData {
+  id            String   @id @default(uuid())
+  spotifyUserId String
+  trackId       String
+  segments      Json?    // Array of LoopSegment objects
+  activeLoopId  String?  // ID of currently active loop
+  loopStart     Float?
+  loopEnd       Float?
+  loopEnabled   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([spotifyUserId, trackId])
+  @@map("loop_data")
+}

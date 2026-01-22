@@ -9,7 +9,7 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex items-center justify-center p-4">
       <div className="text-center">
         <Music className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-white mb-2">Spotify Search & Play</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Music Man</h1>
         <p className="text-gray-400 mb-6">Connect your Spotify account to search and play music</p>
         <button
           onClick={onLogin}

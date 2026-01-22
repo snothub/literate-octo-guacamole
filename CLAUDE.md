@@ -28,11 +28,22 @@ npm run preview
 # Build and run with Docker Compose (serves on port 3000)
 docker-compose up --build
 
-# Stop the container
+# Stop the containers
 docker-compose down
+
+# View logs for a specific service
+docker-compose logs -f api
+docker-compose logs -f db
 ```
 
-The Docker setup uses a multi-stage build: Node.js for building, nginx:alpine for serving the production build. The Dockerfile uses `npm ci` which requires `package-lock.json` to be present - run `npm install` locally first if the lockfile is missing.
+The Docker setup includes three services:
+- **spotify-app**: Multi-stage build using Node.js for building, nginx:alpine for serving on port 3000
+- **api**: Express.js backend with Prisma ORM on port 4000
+- **db**: PostgreSQL 16 database on port 5432
+
+The Dockerfile uses `npm ci` which requires `package-lock.json` to be present - run `npm install` locally first if the lockfile is missing.
+
+The backend automatically runs database migrations on startup, so no manual database setup is required.
 
 ## Architecture & Key Concepts
 
@@ -103,12 +114,49 @@ Users can define and repeat specific segments of a song:
 - When enabled and both points are set, playback automatically jumps from end to start
 - Works with both SDK and preview playback modes
 
+### Backend API (Cloud Sync)
+The app uses a PostgreSQL backend with Express.js and Prisma ORM for cross-device data persistence:
+- **Automatic feature**: Loop data syncs across devices using your Spotify account
+- **No separate login**: Uses your existing Spotify authentication (OAuth)
+- **Automatic persistence**: Loop points (start, end, enabled state) are saved automatically (500ms debounce)
+- **Per-track storage**: Each track's loop settings are stored separately by track ID
+- **User isolation**: Data is stored per Spotify user ID
+- **Real-time sync**: Changes are immediately available across all logged-in devices
+- **Database**: PostgreSQL with Prisma ORM for type-safe queries
+- **Migrations**: Automatic database schema migrations on container startup
+
+**How it works**:
+1. User authenticates with Spotify OAuth (existing flow)
+2. App fetches Spotify user profile to get unique user ID
+3. Loop data is saved to backend with Spotify user ID
+4. On other devices, same Spotify account automatically loads saved loop data
+
+**API Endpoints**:
+- `GET /api/loop/:spotifyUserId/:trackId`: Get saved loop data for a track
+- `POST /api/loop`: Save/update loop data (sends spotifyUserId, trackId, loop settings)
+
+**Setup**: No manual setup required! The backend automatically:
+1. Waits for PostgreSQL to be ready
+2. Runs database migrations
+3. Starts the API server on port 4000
+
+Just run `docker-compose up --build` and everything is configured automatically.
+
 ## Configuration
 
 ### Environment Variables
-- `VITE_SPOTIFY_CLIENT_ID`: Your Spotify application Client ID (required)
 
-To get a Client ID:
+**Frontend (.env for development)**:
+- `VITE_SPOTIFY_CLIENT_ID`: Your Spotify application Client ID (required)
+- `VITE_API_URL`: Backend API URL (default: `http://localhost:4000`)
+
+**Note:** In production (Docker/Kubernetes), the frontend uses runtime configuration instead of build-time environment variables. The Docker entrypoint script generates a `config.json` file from environment variables, allowing the same image to be used across different environments.
+
+**Backend (docker-compose.yml)**:
+- `DATABASE_URL`: PostgreSQL connection string (auto-configured in Docker)
+- `PORT`: API server port (default: 4000)
+
+To get a Spotify Client ID:
 1. Go to https://developer.spotify.com/dashboard
 2. Create a new app
 3. Add redirect URI matching your app's origin (e.g., `http://localhost:5173` for dev, `http://localhost:3000` for Docker)
@@ -127,8 +175,39 @@ To get a Client ID:
 - JSX mode: `react-jsx` (automatic React 17+ JSX transform)
 
 ## File Structure
+
+**Frontend**:
 - `src/App.tsx`: Main component containing all application logic
 - `src/main.tsx`: React application entry point
 - `src/index.css`: TailwindCSS directives and global styles
 - `index.html`: Root HTML template with `#root` div
+- `Dockerfile`: Multi-stage build for frontend (Node.js → nginx)
 - Vite handles bundling with React plugin and TypeScript support
+
+**Backend**:
+- `backend/index.js`: Express.js API server with loop data endpoints
+- `backend/prisma/schema.prisma`: Database schema definition (LoopData model with Spotify user IDs)
+- `backend/prisma/migrations/`: Database migration files (auto-applied on startup)
+- `backend/Dockerfile`: Node.js container for API service
+- `backend/.dockerignore`: Excludes node_modules from Docker context
+- `backend/package.json`: Backend dependencies (Express, Prisma, CORS)
+
+**Infrastructure**:
+- `docker-compose.yml`: Orchestrates frontend, backend API, and PostgreSQL database
+- `.env`: Environment variables for frontend (Spotify Client ID, API URL)
+- `.github/workflows/docker-image.yml`: CI/CD pipeline for building and pushing Docker images
+
+**Deployment**:
+- See `DEPLOYMENT.md` for Docker deployment guide
+- See `kubernetes/README.md` for Kubernetes/Helm/ArgoCD deployment
+- GitHub Actions automatically builds and pushes images to Docker Hub on push to main
+- Images: `music-man:latest` (frontend) and `music-man-api:latest` (backend)
+
+**Kubernetes**:
+- `kubernetes/helm-chart/` - Helm chart for deploying to Kubernetes
+- `kubernetes/argocd/` - ArgoCD application manifests for GitOps
+- Supports deployment with Helm or ArgoCD
+- Includes StatefulSet for PostgreSQL with persistent volumes
+- Frontend uses runtime configuration (generates config.json at container startup)
+- **Releases**: Uses semantic versioning with automatic GitOps deployment
+- See `RELEASE_PROCESS.md` for creating releases (simply: `git tag v1.0.1 && git push origin v1.0.1`)

@@ -2,7 +2,22 @@
   "permissions": {
     "allow": [
       "Bash(npm install)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(DATABASE_URL=\"postgresql://spotify_user:spotify_pass@localhost:5432/spotify_db\" npx prisma migrate dev:*)",
+      "Bash(ls:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose exec:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(curl:*)",
+      "Bash(findstr:*)",
+      "Bash(git push:*)",
+      "Bash(kubectl get:*)",
+      "Bash(dir /b C:devhackathon)",
+      "Bash(npx prisma validate:*)"
     ]
   }
 }

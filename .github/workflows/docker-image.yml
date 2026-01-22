@@ -2,7 +2,9 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main", "feature/db" ]
+    #    branches: [ "main" ]
+    tags:
+    - 'v*.*' # Trigger on version tags like v1.0.0
   pull_request:
     branches: [ "main" ]
 
@@ -11,23 +13,83 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    
+
+    # Grant write permissions to push changes back to repository
+    permissions:
+      contents: write
+      packages: write
+
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Fetch all history for proper versioning
+        token: ${{ secrets.GITHUB_TOKEN }} # Use GitHub token for authentication
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Set short SHA
-      run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
-    - name: Build the Docker image
-      run: | 
+    - name: Determine version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "IS_RELEASE=true" >> $GITHUB_ENV
+        else
+          VERSION=${GITHUB_SHA::7}
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "IS_RELEASE=false" >> $GITHUB_ENV
+        fi
+        echo "Building version: ${VERSION}"
+
+    # Build and push unified app
+    - name: Build unified app Docker image
+      run: |
         docker build . --file Dockerfile \
-          --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.SHORT_SHA }} \
+          --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.VERSION }} \
           --tag ${{ secrets.DOCKERHUB_USERNAME }}/music-man:latest
-    - name: Push to Docker Hub
-      run: | 
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.SHORT_SHA }}
+
+    - name: Push app to Docker Hub
+      run: |
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.VERSION }}
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:latest
+
+    # Update Git repository with new version (only for releases)
+    - name: Update ArgoCD application manifests
+      if: env.IS_RELEASE == 'true'
+      run: |
+        # Configure git
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Checkout main branch (we're in detached HEAD when triggered by tag)
+        git clone https://x-access-token:${{ secrets.MM_TOKEN }}@github.com/snothub/scaling-parakeet.git infra
+        cd infra
+        git fetch origin main
+        git checkout main
+
+        echo "Handling version ${{ env.VERSION }}"
+
+        # Update dev environment
+        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" argocd/application.yaml
+
+        # Update prod environment
+        # sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" argocd/application-prod.yaml
+
+        # Check if there are changes
+        if git diff --quiet; then
+          echo "No changes to commit"
+          exit 0
+        fi
+
+        # Show what changed
+        echo "Changes to be committed:"
+        git diff argocd/
+
+        # Commit and push
+        git add argocd/application.yaml
+        git commit -m "chore: update image versions to ${{ env.VERSION }}"
+        git push origin main

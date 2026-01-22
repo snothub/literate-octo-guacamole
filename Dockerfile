@@ -1,29 +1,40 @@
-# Dockerfile
-FROM node:20-alpine AS builder
-
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with optimization flags
+RUN npm ci --prefer-offline --no-audit --progress=false
 
-# Copy source code
-COPY . .
+# Copy source
+COPY index.html vite.config.ts tsconfig.json tailwind.config.js postcss.config.js ./
+COPY src ./src
 
-# Build the app
+# Build
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+# Stage 2: Backend with frontend
+FROM node:20-alpine
+WORKDIR /app
 
-# Copy built assets from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Install openssl (needed for Prisma)
+RUN apk add --no-cache openssl
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy backend files
+COPY backend/package.json backend/package-lock.json ./
+COPY backend/prisma ./prisma/
 
-EXPOSE 80
+# Install backend dependencies
+RUN npm ci --prefer-offline --no-audit --progress=false --only=production && \
+    npx prisma generate
 
-CMD ["nginx", "-g", "daemon off;"]
+# Copy backend code
+COPY backend/index.js ./
+
+# Copy frontend build
+COPY --from=frontend-builder /app/dist ./public
+
+EXPOSE 4000
+CMD ["node", "index.js"]

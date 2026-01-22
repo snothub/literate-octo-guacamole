@@ -1,8 +1,38 @@
 version: '3.8'
 
 services:
-  spotify-app:
-    build: .
+  app:  # Combines frontend + backend
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "3000:80"
+      - "4000:4000"  # Single port
+    environment:
+      DATABASE_URL: postgresql://spotify_user:spotify_pass@db:5432/spotify_db
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      PORT: 4000
+      VITE_SPOTIFY_CLIENT_ID: ${VITE_SPOTIFY_CLIENT_ID:-011c5f27eef64dd0b6f65ca673215a58}
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: spotify_user
+      POSTGRES_PASSWORD: spotify_pass
+      POSTGRES_DB: spotify_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spotify_user -d spotify_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

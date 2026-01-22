@@ -2,7 +2,7 @@
  * Extract dominant color from an image URL using Canvas API
  */
 export const extractDominantColor = async (imageUrl: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     
