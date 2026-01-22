@@ -9,7 +9,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --prefer-offline --no-audit --progress=false
 
 # Copy source
-COPY index.html vite.config.ts tsconfig.json ./
+COPY index.html vite.config.ts tsconfig.json tailwind.config.js postcss.config.js ./
 COPY src ./src
 
 # Build
