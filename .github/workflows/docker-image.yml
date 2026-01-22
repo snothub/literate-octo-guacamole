@@ -66,7 +66,7 @@ jobs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
         # Checkout main branch (we're in detached HEAD when triggered by tag)
-        git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/snothub/scaling-parakeet.git infra
+        git clone https://x-access-token:${{ secrets.MM_TOKEN }}@github.com/snothub/scaling-parakeet.git infra
         cd infra
         git fetch origin main
         git checkout main
