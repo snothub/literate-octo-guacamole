@@ -52,7 +52,7 @@ export const FirstTimeTooltip = ({
   }
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top duration-300">
+    <div className="hidden md:fixed md:top-4 md:left-1/2 md:-translate-x-1/2 md:z-50 md:animate-in md:slide-in-from-top md:duration-300">
       <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-3 rounded-lg shadow-2xl border border-emerald-400/50 flex items-center gap-3 max-w-md">
         <div className="flex-shrink-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-sm font-bold">
           {step}

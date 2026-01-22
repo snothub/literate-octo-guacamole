@@ -1,8 +1,9 @@
-import { Circle, CircleDot, Pause, Play, X } from 'lucide-react';
+import { useState } from 'react';
 import type { LyricLine } from '../types/spotify';
 import type { LoopSegment, MagnifierState } from '../types/ui';
 import { LyricsDisplay } from './LyricsDisplay';
 import { ProgressBar } from './ProgressBar';
+import { PlayControls } from './PlayControls';
 
 type PlayBarProps = {
   playing: boolean;
@@ -26,6 +27,8 @@ type PlayBarProps = {
   onSetLoopStart: () => void;
   onSetLoopEnd: () => void;
   onClearLoop: () => void;
+  onSkipBack: (seconds: number) => void;
+  onSkipForward: (seconds: number) => void;
   onProgressMouseDown: (event: React.MouseEvent<HTMLDivElement>) => void;
   onMarkerMouseDown: (event: React.MouseEvent, marker: 'start' | 'end') => void;
   onLoopClick: (loop: LoopSegment) => void;
@@ -54,75 +57,44 @@ export const PlayBar = ({
   onSetLoopStart,
   onSetLoopEnd,
   onClearLoop,
+  onSkipBack,
+  onSkipForward,
   onProgressMouseDown,
   onMarkerMouseDown,
   onLoopClick,
   onSegmentMouseDown,
 }: PlayBarProps) => {
+  const [activeTab, setActiveTab] = useState<'controls' | 'lyrics'>('controls');
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-xl border-t border-gray-800 shadow-2xl">
-      <LyricsDisplay
-        lyrics={lyrics}
-        lyricsLoading={lyricsLoading}
-        progress={progress}
-        containerRef={lyricsContainerRef}
-        onLineClick={onLyricsLineClick}
-      />
-      <div className="px-3 sm:px-4 py-3 sm:py-4">
-        <div className="flex items-center justify-center gap-2 sm:gap-4">
-          <button
-            onClick={onTogglePlay}
-            className="bg-gradient-to-br from-white to-gray-100 hover:from-gray-100 hover:to-gray-200 text-black p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0 shadow-lg active:scale-95"
-          >
-            {playing ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />}
-          </button>
+      {/* Tabs */}
+      <div className="flex border-b border-gray-800">
+        <button
+          onClick={() => setActiveTab('controls')}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-all ${
+            activeTab === 'controls'
+              ? 'text-emerald-400 border-b-2 border-emerald-500'
+              : 'text-gray-400 hover:text-gray-300'
+          }`}
+        >
+          Controls
+        </button>
+        <button
+          onClick={() => setActiveTab('lyrics')}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-all ${
+            activeTab === 'lyrics'
+              ? 'text-emerald-400 border-b-2 border-emerald-500'
+              : 'text-gray-400 hover:text-gray-300'
+          }`}
+        >
+          Lyrics
+        </button>
+      </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            <button
-              onClick={onSetLoopStart}
-              disabled={!playing || Boolean(activeLoopId)}
-              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md relative group ${
-                loopStart !== null 
-                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30' 
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-              } disabled:opacity-30 disabled:cursor-not-allowed active:scale-95`}
-              title="Set loop start (S)"
-            >
-              <CircleDot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              {loopStart === null && !activeLoopId && (
-                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-medium shadow-lg">
-                  Press S or click
-                </span>
-              )}
-            </button>
-            <button
-              onClick={onSetLoopEnd}
-              disabled={!playing || Boolean(activeLoopId)}
-              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md relative group ${
-                loopEnd !== null 
-                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30' 
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-              } disabled:opacity-30 disabled:cursor-not-allowed active:scale-95`}
-              title="Set loop end (E)"
-            >
-              <Circle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              {loopStart !== null && loopEnd === null && !activeLoopId && (
-                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-medium shadow-lg animate-pulse">
-                  Press E or click
-                </span>
-              )}
-            </button>
-            {(loopStart !== null || loopEnd !== null) && (
-              <button
-                onClick={onClearLoop}
-                className="p-1 sm:p-1.5 rounded-lg bg-gray-700 text-gray-400 hover:bg-gray-600 transition-all shadow-md active:scale-95"
-                title="Clear loop"
-              >
-                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            )}
-          </div>
-
+      {/* Tab Content */}
+      {activeTab === 'controls' && (
+        <>
           <ProgressBar
             progress={progress}
             duration={duration}
@@ -140,14 +112,40 @@ export const PlayBar = ({
             onLoopClick={onLoopClick}
             onSegmentMouseDown={onSegmentMouseDown}
           />
+          <PlayControls
+            playing={playing}
+            loopStart={loopStart}
+            loopEnd={loopEnd}
+            activeLoopId={activeLoopId}
+            duration={duration}
+            progress={progress}
+            onTogglePlay={onTogglePlay}
+            onSetLoopStart={onSetLoopStart}
+            onSetLoopEnd={onSetLoopEnd}
+            onClearLoop={onClearLoop}
+            onSkipBack={onSkipBack}
+            onSkipForward={onSkipForward}
+          />
+        </>
+      )}
 
-          {usingPreview && (
-            <span className="text-gray-500 text-[10px] sm:text-xs flex-shrink-0 hidden sm:inline">
-              Preview
-            </span>
-          )}
+      {activeTab === 'lyrics' && (
+        <LyricsDisplay
+          lyrics={lyrics}
+          lyricsLoading={lyricsLoading}
+          progress={progress}
+          containerRef={lyricsContainerRef}
+          onLineClick={onLyricsLineClick}
+        />
+      )}
+
+      {usingPreview && (
+        <div className="px-3 sm:px-4 py-2 text-center">
+          <span className="text-gray-500 text-[10px] sm:text-xs">
+            Preview Mode
+          </span>
         </div>
-      </div>
+      )}
     </div>
   );
 };

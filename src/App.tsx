@@ -357,6 +357,12 @@ export default function App() {
           onSetLoopStart={setLoopStartPoint}
           onSetLoopEnd={handleSetLoopEnd}
           onClearLoop={clearLoop}
+          onSkipBack={(seconds) => {
+            void seekToMs(Math.max(0, progress - seconds * 1000));
+          }}
+          onSkipForward={(seconds) => {
+            void seekToMs(Math.min(duration, progress + seconds * 1000));
+          }}
           onProgressMouseDown={handleMouseDown}
           onMarkerMouseDown={handleMarkerMouseDown}
           onLoopClick={handleLoopClick}
