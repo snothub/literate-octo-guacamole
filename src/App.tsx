@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LoopControlsPanel } from './components/LoopControlsPanel';
-import { LoopList } from './components/LoopList';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayBar } from './components/PlayBar';
 import { RecentTracksPane } from './components/RecentTracksPane';
@@ -291,22 +290,25 @@ export default function App() {
           
           {/* Left Column - Loop Controls */}
           <div className="order-2 lg:order-1">
-            <LoopControlsPanel
-              loops={loops}
-              activeLoopId={activeLoopId}
-              loopStart={loopStart}
-              loopEnd={loopEnd}
-              loopEnabled={loopEnabled}
-              onLoopStartChange={handleLoopStartChange}
-              onLoopEndChange={handleLoopEndChange}
-              onLoopEnabledChange={setLoopEnabled}
-              onAddLoop={addLoop}
-              onRemoveLoop={removeLoop}
-              onUpdateLabel={updateLoopLabel}
-            />
+            {selected && (
+              <LoopControlsPanel
+                loops={loops}
+                activeLoopId={activeLoopId}
+                loopStart={loopStart}
+                loopEnd={loopEnd}
+                loopEnabled={loopEnabled}
+                onLoopStartChange={handleLoopStartChange}
+                onLoopEndChange={handleLoopEndChange}
+                onLoopEnabledChange={setLoopEnabled}
+                onAddLoop={addLoop}
+                onRemoveLoop={removeLoop}
+                onUpdateLabel={updateLoopLabel}
+                onSeekLoop={handleLoopClick}
+              />
+            )}
           </div>
 
-          {/* Center Column - Search and Loops List */}
+          {/* Center Column - Search */}
           <div className="order-1 lg:order-2 space-y-4">
             <SearchPanel
               className="w-full"
@@ -320,7 +322,6 @@ export default function App() {
               deviceId={deviceId}
               onSelectTrack={handleSelectTrack}
             />
-            {selected && <LoopList loops={loops} activeLoopId={activeLoopId} onSeekLoop={handleLoopClick} />}
           </div>
 
           {/* Right Column - Recent Tracks */}

@@ -1,7 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import type { LoopSegment } from '../types/ui';
-import { formatTimeInput } from '../utils/time';
+import { formatTimeInput, formatTime } from '../utils/time';
 
 type LoopControlsPanelProps = {
   loops: LoopSegment[];
@@ -15,6 +15,7 @@ type LoopControlsPanelProps = {
   onAddLoop: () => void;
   onRemoveLoop: (loopId: string) => void;
   onUpdateLabel: (value: string) => void;
+  onSeekLoop?: (loop: LoopSegment) => void;
 };
 
 export const LoopControlsPanel = ({
@@ -29,6 +30,7 @@ export const LoopControlsPanel = ({
   onAddLoop,
   onRemoveLoop,
   onUpdateLabel,
+  onSeekLoop,
 }: LoopControlsPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const activeLoop = loops.find((loop) => loop.id === activeLoopId) || null;
@@ -156,7 +158,7 @@ export const LoopControlsPanel = ({
             )}
           </div>
 
-          <div className="mt-2 p-2.5 bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-lg text-[10px] text-gray-400 space-y-0.5 border border-gray-700/30">
+          <div className="hidden md:block mt-2 p-2.5 bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-lg text-[10px] text-gray-400 space-y-0.5 border border-gray-700/30">
             <p className="text-gray-300 font-semibold text-[11px] mb-1">⌨️ Keyboard Shortcuts</p>
             <div className="space-y-0.5 leading-relaxed">
               <p><kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">S</kbd> Set start · <kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">E</kbd> Set end · <kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">L</kbd> Toggle loop</p>
@@ -165,6 +167,46 @@ export const LoopControlsPanel = ({
               <p><kbd className="px-1 py-0.5 bg-gray-700/50 rounded text-[9px] font-mono">⌘←/→</kbd> Nudge end ±250ms (±50ms w/o Shift)</p>
             </div>
             </div>
+
+          {/* Saved Loops Section */}
+          {loops.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-gray-700/30 space-y-2">
+              <h4 className="text-sm font-semibold text-emerald-300 flex items-center gap-2">
+                <span className="w-1 h-4 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full"></span>
+                Saved Loops ({loops.length})
+              </h4>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {loops.map((loop) => {
+                  const isActive = loop.id === activeLoopId;
+                  return (
+                    <button
+                      key={loop.id}
+                      type="button"
+                      onClick={() => onSeekLoop?.(loop)}
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border transition-all text-left active:scale-98 ${
+                        isActive
+                          ? 'border-emerald-500/40 bg-emerald-500/10 shadow-lg shadow-emerald-500/10'
+                          : 'border-transparent bg-gray-800/50 hover:bg-gray-700/70 hover:border-gray-600/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="inline-flex w-3 h-3 rounded-full flex-shrink-0 shadow-md"
+                          style={{ backgroundColor: loop.color }}
+                        />
+                        <span className={`text-sm truncate ${isActive ? 'text-white font-medium' : 'text-gray-300'}`}>
+                          {loop.label}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400 flex-shrink-0 font-mono">
+                        {formatTime(loop.start)} - {formatTime(loop.end)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           </div>
 
         </div>
