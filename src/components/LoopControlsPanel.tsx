@@ -56,37 +56,37 @@ export const LoopControlsPanel = ({
         {isOpen && (
           <div className="max-h-[calc(100vh-20rem)] overflow-y-auto px-4 sm:px-5 py-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
           <div className="space-y-2.5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2">
-            <label className="text-xs font-medium text-emerald-300 w-full sm:w-16 flex-shrink-0">Start</label>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-emerald-300 flex-shrink-0 min-w-fit">Start</label>
             <input
               type="text"
               value={formatTimeInput(loopStart)}
               onChange={onLoopStartChange}
               placeholder="0:00.000"
-              className="w-full flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all font-mono"
+              className="flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all font-mono"
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2">
-            <label className="text-xs font-medium text-emerald-300 w-full sm:w-16 flex-shrink-0">End</label>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-emerald-300 flex-shrink-0 min-w-fit">End</label>
             <input
               type="text"
               value={formatTimeInput(loopEnd)}
               onChange={onLoopEndChange}
               placeholder="0:00.000"
-              className="w-full flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all font-mono"
+              className="flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all font-mono"
             />
           </div>
 
           {activeLoop && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2">
-              <label className="text-xs font-medium text-emerald-300 w-full sm:w-16 flex-shrink-0">Label</label>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-emerald-300 flex-shrink-0 min-w-fit">Label</label>
               <input
                 type="text"
                 value={activeLoop.label}
                 onChange={(e) => onUpdateLabel(e.target.value)}
                 placeholder="Loop name"
-                className="w-full flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all"
+                className="flex-1 bg-gray-900/60 text-white px-2 py-1 rounded border border-gray-600/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none text-xs transition-all"
               />
             </div>
           )}
