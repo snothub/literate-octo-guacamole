@@ -15,7 +15,8 @@
       "Bash(curl:*)",
       "Bash(findstr:*)",
       "Bash(git push:*)",
-      "Bash(kubectl get:*)"
+      "Bash(kubectl get:*)",
+      "Bash(dir /b C:devhackathon)"
     ]
   }
 }
