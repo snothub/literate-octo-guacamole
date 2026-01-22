@@ -66,14 +66,16 @@ jobs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
         # Checkout main branch (we're in detached HEAD when triggered by tag)
-        git fetch origin feature/db
-        git checkout feature/db
+        git clone https://github.com/snothub/scaling-parakeet.git infra
+        cd infra
+        git fetch origin main
+        git checkout main
 
         # Update dev environment
-        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application.yaml
+        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" argocd/application.yaml
 
         # Update prod environment
-        # sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" kubernetes/argocd/application-prod.yaml
+        # sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" argocd/application-prod.yaml
 
         # Check if there are changes
         if git diff --quiet; then
@@ -83,9 +85,9 @@ jobs:
 
         # Show what changed
         echo "Changes to be committed:"
-        git diff kubernetes/argocd/
+        git diff argocd/
 
         # Commit and push
-        git add kubernetes/argocd/application.yaml
+        git add argocd/application.yaml
         git commit -m "chore: update image versions to ${{ env.VERSION }}"
-        git push origin feature/db
+        git push origin main
