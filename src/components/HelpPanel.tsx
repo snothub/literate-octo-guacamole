@@ -22,27 +22,28 @@ export const HelpPanel = () => {
   }, []);
 
   return (
-    <>
-      {/* Help Button */}
+    <div className="bg-gradient-to-br from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-xl border border-gray-700/30 mb-4 overflow-hidden">
+      {/* Unified Header Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-gray-800/60 hover:bg-gray-700/60 text-emerald-400 border border-gray-700/50 hover:border-emerald-500/50 transition-all mb-4"
+        className="w-full flex items-center justify-between gap-2 px-4 py-3 hover:bg-gray-800/50 transition-all"
         aria-expanded={isOpen}
       >
-        <HelpCircle className="w-4 h-4" />
-        <span>Help</span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <div className="flex items-center gap-2">
+          <HelpCircle className="w-4 h-4 text-emerald-400" />
+          <span className="font-semibold text-white">Help</span>
+          {version && <span className="text-xs text-gray-500">{version}</span>}
+        </div>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Expandable Help Content */}
       {isOpen && (
-        <div className="bg-gradient-to-br from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-gray-700/30 space-y-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="text-center space-y-2">
+        <div className="px-4 pt-0 pb-4 sm:px-5 sm:pb-5 border-t border-gray-700/30 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="text-center space-y-2 pt-3">
             <div className="text-4xl">🎵</div>
             <div>
               <h3 className="text-base sm:text-lg font-bold text-white">Spotify Loop Trainer</h3>
-              {version && <p className="text-xs text-gray-500 mt-1">v{version}</p>}
-            </div>
             <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
               Perfect for practicing music, dance choreography, or learning lyrics. Create custom loops to repeat any section of a song.
             </p>
@@ -73,6 +74,6 @@ export const HelpPanel = () => {
           </p>
         </div>
       )}
-    </>
+    </div>
   );
 };
