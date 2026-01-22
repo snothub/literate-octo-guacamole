@@ -17,6 +17,7 @@ type SpotifyPlaybackState = {
   progress: number;
   duration: number;
   togglePlay: () => Promise<void>;
+  playFromPosition: (positionMs: number) => Promise<void>;
   seekToMs: (positionMs: number) => void;
   resetPlaybackForTrack: (track: Track) => void;
 };
@@ -170,6 +171,44 @@ export const useSpotifyPlayback = ({
     }
   };
 
+  const playFromPosition = async (positionMs: number) => {
+    if (!selected) return;
+    if (usingPreview && audio) {
+      audio.currentTime = positionMs / 1000;
+      await audio.play();
+      setPlaying(true);
+      setProgress(positionMs);
+      return;
+    }
+
+    if (player && deviceId) {
+      try {
+        await spotifyFetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uris: [selected.uri], position_ms: Math.max(0, Math.floor(positionMs)) }),
+        });
+        setPlaying(true);
+        setUsingPreview(false);
+        setProgress(positionMs);
+        return;
+      } catch {
+        if (selected.preview_url) {
+          playPreview();
+          return;
+        }
+        setError('Playback failed. Premium required for full playback.');
+        return;
+      }
+    }
+
+    if (selected.preview_url) {
+      playPreview();
+      return;
+    }
+    setError('No playback available');
+  };
+
   const seekToMs = (positionMs: number) => {
     if (!selected) return;
     if (usingPreview && audio) {
@@ -201,6 +240,7 @@ export const useSpotifyPlayback = ({
     progress,
     duration,
     togglePlay,
+    playFromPosition,
     seekToMs,
     resetPlaybackForTrack,
   };
