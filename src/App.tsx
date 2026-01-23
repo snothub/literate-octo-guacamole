@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LoopControlsPanel } from './components/LoopControlsPanel';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayBar } from './components/PlayBar';
 import { RecentTracksPane } from './components/RecentTracksPane';
@@ -286,30 +285,10 @@ export default function App() {
 
       <div className="max-w-[1800px] mx-auto">
         {/* Desktop: 3 columns | Tablet: 2 columns | Mobile: Stack */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-4 md:gap-6 pt-4 sm:pt-8 md:pt-12">
-          
-          {/* Left Column - Loop Controls */}
-          <div className="order-2 lg:order-1">
-            {selected && (
-              <LoopControlsPanel
-                loops={loops}
-                activeLoopId={activeLoopId}
-                loopStart={loopStart}
-                loopEnd={loopEnd}
-                loopEnabled={loopEnabled}
-                onLoopStartChange={handleLoopStartChange}
-                onLoopEndChange={handleLoopEndChange}
-                onLoopEnabledChange={setLoopEnabled}
-                onAddLoop={addLoop}
-                onRemoveLoop={removeLoop}
-                onUpdateLabel={updateLoopLabel}
-                onSeekLoop={handleLoopClick}
-              />
-            )}
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr] gap-4 md:gap-6 pt-4 sm:pt-8 md:pt-12">
 
           {/* Center Column - Search */}
-          <div className="order-1 lg:order-2 space-y-4">
+          <div className="space-y-4">
             <SearchPanel
               className="w-full"
               query={query}
@@ -324,11 +303,6 @@ export default function App() {
             />
           </div>
 
-          {/* Right Column - Recent Tracks */}
-          <div className="order-3">
-            <RecentTracksPane tracks={recentTracks} onSelectTrack={handleSelectTrack} />
-          </div>
-          
         </div>
       </div>
 
@@ -367,6 +341,14 @@ export default function App() {
           onMarkerMouseDown={handleMarkerMouseDown}
           onLoopClick={handleLoopClick}
           onSegmentMouseDown={handleSegmentMouseDown}
+          recentTracks={recentTracks}
+          onSelectTrack={handleSelectTrack}
+          onLoopStartChange={handleLoopStartChange}
+          onLoopEndChange={handleLoopEndChange}
+          onLoopEnabledChange={setLoopEnabled}
+          onAddLoop={addLoop}
+          onRemoveLoop={removeLoop}
+          onUpdateLoopLabel={updateLoopLabel}
         />
       )}
     </div>
