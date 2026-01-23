@@ -203,10 +203,10 @@ export const useLoopControls = ({
     setLoopEnabled(false);
   };
 
-  const addLoop = () => {
-    // Use existing loopStart if set, otherwise use current progress
-    const start = loopStart !== null ? loopStart : progress;
-    let end = loopEnd;
+  const addLoop = (startOverride?: number | null, endOverride?: number | null) => {
+    // Use provided overrides or fall back to state values
+    const start = startOverride !== undefined ? startOverride : (loopStart !== null ? loopStart : progress);
+    let end = endOverride !== undefined ? endOverride : loopEnd;
     if (end === null || end <= start) {
       end = Math.min(start + 5000, duration);
       setLoopEnd(end);

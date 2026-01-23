@@ -188,7 +188,7 @@ export const PlayBar = ({
           <div className="flex items-center gap-1">
             <button
               onClick={onSetLoopStart}
-              disabled={!playing || Boolean(activeLoopId)}
+              disabled={!playing}
               className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md ${
                 loopStart !== null
                   ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30'
@@ -200,7 +200,7 @@ export const PlayBar = ({
             </button>
             <button
               onClick={onSetLoopEnd}
-              disabled={!playing || Boolean(activeLoopId)}
+              disabled={!playing}
               className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md ${
                 loopEnd !== null
                   ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/30'

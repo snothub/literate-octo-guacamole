@@ -135,13 +135,33 @@ export default function App() {
     }
   };
 
+  const handleStartNewLoopDefinition = () => {
+    // If there's an active loop, we're starting a fresh loop definition
+    // Clear the current loop points to start fresh
+    if (activeLoopId) {
+      setLoopStartValue(null);
+      setLoopEndValue(null);
+    }
+    setLoopStartPoint();
+  };
+
   const handleSetLoopEnd = () => {
+    // If there's an active loop and we haven't manually set loopStart yet, start fresh
+    if (activeLoopId && loopStart === null) {
+      setLoopStartValue(null);
+      setLoopEndValue(null);
+    }
+
+    // Calculate what end value will be set (same logic as setLoopEndPoint)
+    const newEnd = loopStart !== null && progress < loopStart ? loopStart : progress;
+
     setLoopEndPoint();
-    // Automatically add the loop if both start and end are set and no active loop exists
-    if (loopStart !== null && !activeLoopId) {
-      // Need to wait a tick for the state to update
+    // Automatically add a new loop if both start and end are set
+    // This allows creating new loops even when an existing loop is active
+    if (loopStart !== null) {
+      // Pass the captured values to avoid state update timing issues
       setTimeout(() => {
-        addLoop();
+        addLoop(loopStart, newEnd);
       }, 0);
     }
   };
@@ -164,7 +184,7 @@ export default function App() {
 
       if (key === 's') {
         event.preventDefault();
-        setLoopStartPoint();
+        handleStartNewLoopDefinition();
         return;
       }
       if (key === 'e') {
@@ -326,7 +346,7 @@ export default function App() {
         }}
         progressBarRef={progressBarRef}
         onTogglePlay={togglePlay}
-        onSetLoopStart={setLoopStartPoint}
+        onSetLoopStart={handleStartNewLoopDefinition}
         onSetLoopEnd={handleSetLoopEnd}
         onClearLoop={clearLoop}
         onSkipBack={(seconds) => {
