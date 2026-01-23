@@ -87,10 +87,15 @@ export const useSpotifyPlayback = ({
 
     if (playing && !usingPreview && player) {
       progressInterval.current = window.setInterval(async () => {
-        const state = await player.getCurrentState();
-        if (state) {
-          setProgress(state.position);
-          setDuration(state.duration);
+        try {
+          const state = await player.getCurrentState();
+          if (state) {
+            setProgress(state.position);
+            setDuration(state.duration);
+          }
+        } catch (err) {
+          console.error('Error getting player state:', err);
+          // Continue polling - the player will recover on next attempt
         }
       }, 500);
     }
@@ -158,16 +163,28 @@ export const useSpotifyPlayback = ({
         audio.play();
         setPlaying(true);
       } else if (player) {
-        const state = await player.getCurrentState();
-        if (state && state.track_window.current_track.id === selected.id) {
-          await player.resume();
-          setPlaying(true);
-        } else if (deviceId) {
-          await playWithSDK();
-        } else if (selected.preview_url) {
-          playPreview();
-        } else {
-          setError('No playback available');
+        try {
+          const state = await player.getCurrentState();
+          if (state && state.track_window.current_track.id === selected.id) {
+            await player.resume();
+            setPlaying(true);
+          } else if (deviceId) {
+            await playWithSDK();
+          } else if (selected.preview_url) {
+            playPreview();
+          } else {
+            setError('No playback available');
+          }
+        } catch (err) {
+          console.error('Error getting player state in togglePlay:', err);
+          // Fallback to SDK or preview
+          if (deviceId) {
+            await playWithSDK();
+          } else if (selected.preview_url) {
+            playPreview();
+          } else {
+            setError('No playback available');
+          }
         }
       } else if (selected.preview_url) {
         playPreview();
