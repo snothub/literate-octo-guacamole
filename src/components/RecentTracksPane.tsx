@@ -37,7 +37,6 @@ export const RecentTracksPane = ({ tracks, onSelectTrack }: RecentTracksPaneProp
                 </div>
               </div>
             )}
-        </div>
       </div>
     </div>
   );
