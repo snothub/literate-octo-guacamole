@@ -34,10 +34,10 @@ type PlayBarProps = {
   onClearLoop: () => void;
   onSkipBack: (seconds: number) => void;
   onSkipForward: (seconds: number) => void;
-  onProgressMouseDown: (event: React.MouseEvent<HTMLDivElement>) => void;
-  onMarkerMouseDown: (event: React.MouseEvent, marker: 'start' | 'end') => void;
+  onProgressMouseDown: (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
+  onMarkerMouseDown: (event: React.MouseEvent | React.TouchEvent, marker: 'start' | 'end') => void;
   onLoopClick: (loop: LoopSegment) => void;
-  onSegmentMouseDown: (event: React.MouseEvent, loop: LoopSegment) => void;
+  onSegmentMouseDown: (event: React.MouseEvent | React.TouchEvent, loop: LoopSegment) => void;
   recentTracks: Track[];
   onSelectTrack: (track: Track) => void;
   onLoopStartChange: (event: React.ChangeEvent<HTMLInputElement>) => void;

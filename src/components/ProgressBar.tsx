@@ -13,10 +13,10 @@ type ProgressBarProps = {
   draggingMarker: 'start' | 'end' | null;
   segmentWasDragged: boolean;
   progressBarRef: React.RefObject<HTMLDivElement>;
-  onMouseDown: (event: React.MouseEvent<HTMLDivElement>) => void;
-  onMarkerMouseDown: (event: React.MouseEvent, marker: 'start' | 'end') => void;
+  onMouseDown: (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
+  onMarkerMouseDown: (event: React.MouseEvent | React.TouchEvent, marker: 'start' | 'end') => void;
   onLoopClick: (loop: LoopSegment) => void;
-  onSegmentMouseDown: (event: React.MouseEvent, loop: LoopSegment) => void;
+  onSegmentMouseDown: (event: React.MouseEvent | React.TouchEvent, loop: LoopSegment) => void;
 };
 
 export const ProgressBar = ({
@@ -62,6 +62,9 @@ export const ProgressBar = ({
                 onMouseDown={(event) => {
                   onSegmentMouseDown(event, loop);
                 }}
+                onTouchStart={(event) => {
+                  onSegmentMouseDown(event, loop);
+                }}
                 onClick={(event) => {
                   event.stopPropagation();
                   // Only trigger click if segment wasn't dragged
@@ -80,6 +83,7 @@ export const ProgressBar = ({
           ref={progressBarRef}
           className={`h-3 bg-gray-700 rounded-full group select-none relative ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
           onMouseDown={onMouseDown}
+          onTouchStart={onMouseDown}
         >
         {magnifier.visible && (
           <div
@@ -130,6 +134,7 @@ export const ProgressBar = ({
             </div>
             <div
               onMouseDown={(event) => onMarkerMouseDown(event, 'start')}
+              onTouchStart={(event) => onMarkerMouseDown(event, 'start')}
               className={`w-5 h-5 rounded-full border-2 shadow-lg transition-transform flex items-center justify-center text-xs font-bold text-gray-900 relative z-10 ${
                 draggingMarker === 'start' ? 'scale-125 cursor-grabbing' : 'cursor-grab hover:scale-110'
               }`}
@@ -154,6 +159,7 @@ export const ProgressBar = ({
             </div>
             <div
               onMouseDown={(event) => onMarkerMouseDown(event, 'end')}
+              onTouchStart={(event) => onMarkerMouseDown(event, 'end')}
               className={`w-5 h-5 rounded-full border-2 shadow-lg transition-transform flex items-center justify-center text-xs font-bold text-gray-900 relative z-10 ${
                 draggingMarker === 'end' ? 'scale-125 cursor-grabbing' : 'cursor-grab hover:scale-110'
               }`}

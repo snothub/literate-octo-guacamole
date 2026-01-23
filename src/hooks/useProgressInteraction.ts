@@ -20,9 +20,9 @@ type ProgressInteractionState = {
   segmentWasDragged: boolean;
   magnifier: MagnifierState;
   progressBarRef: React.RefObject<HTMLDivElement>;
-  handleMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
-  handleMarkerMouseDown: (e: React.MouseEvent, marker: 'start' | 'end') => void;
-  handleSegmentMouseDown: (e: React.MouseEvent, loop: LoopSegment) => void;
+  handleMouseDown: (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
+  handleMarkerMouseDown: (e: React.MouseEvent | React.TouchEvent, marker: 'start' | 'end') => void;
+  handleSegmentMouseDown: (e: React.MouseEvent | React.TouchEvent, loop: LoopSegment) => void;
 };
 
 export const useProgressInteraction = ({
@@ -55,6 +55,13 @@ export const useProgressInteraction = ({
     startX: number;
   } | null>(null);
 
+  const getClientX = (e: MouseEvent | TouchEvent): number => {
+    if (e instanceof TouchEvent) {
+      return e.touches[0]?.clientX || 0;
+    }
+    return (e as MouseEvent).clientX;
+  };
+
   const seekToPosition = (clientX: number) => {
     if (!selectedId || !progressBarRef.current) return;
     const rect = progressBarRef.current.getBoundingClientRect();
@@ -77,23 +84,25 @@ export const useProgressInteraction = ({
     }, 1200);
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
+    const clientX = 'touches' in e ? e.touches[0]?.clientX || 0 : (e as React.MouseEvent<HTMLDivElement>).clientX;
     setIsDragging(true);
-    seekToPosition(e.clientX);
-    showMagnifier(e.clientX);
+    seekToPosition(clientX);
+    showMagnifier(clientX);
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+    const clientX = getClientX(e);
     if (draggingLoopRef.current && progressBarRef.current) {
       const rect = progressBarRef.current.getBoundingClientRect();
-      const deltaPx = e.clientX - draggingLoopRef.current.startX;
-      
+      const deltaPx = clientX - draggingLoopRef.current.startX;
+
       // Only mark as dragged if mouse moved more than 3 pixels
       if (Math.abs(deltaPx) > 3) {
         setSegmentWasDragged(true);
       }
-      
+
       const deltaMs = (deltaPx / rect.width) * duration;
       const length = draggingLoopRef.current.end - draggingLoopRef.current.start;
       const maxStart = Math.max(0, duration - length);
@@ -103,11 +112,11 @@ export const useProgressInteraction = ({
       return;
     }
     if (isDragging) {
-      seekToPosition(e.clientX);
-      showMagnifier(e.clientX);
+      seekToPosition(clientX);
+      showMagnifier(clientX);
     } else if (draggingMarker && progressBarRef.current) {
       const rect = progressBarRef.current.getBoundingClientRect();
-      const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       const newPos = percent * duration;
 
       if (draggingMarker === 'start') {
@@ -137,22 +146,23 @@ export const useProgressInteraction = ({
     draggingLoopRef.current = null;
   };
 
-  const handleMarkerMouseDown = (e: React.MouseEvent, marker: 'start' | 'end') => {
+  const handleMarkerMouseDown = (e: React.MouseEvent | React.TouchEvent, marker: 'start' | 'end') => {
     e.stopPropagation();
     e.preventDefault();
     setDraggingMarker(marker);
   };
 
-  const handleSegmentMouseDown = (e: React.MouseEvent, loop: LoopSegment) => {
+  const handleSegmentMouseDown = (e: React.MouseEvent | React.TouchEvent, loop: LoopSegment) => {
     if (!progressBarRef.current) return;
     e.stopPropagation();
     e.preventDefault();
+    const clientX = 'touches' in e ? e.touches[0]?.clientX || 0 : (e as React.MouseEvent).clientX;
     onSelectLoop(loop.id);
     draggingLoopRef.current = {
       id: loop.id,
       start: loop.start,
       end: loop.end,
-      startX: e.clientX,
+      startX: clientX,
     };
     setIsDraggingSegment(true);
   };
@@ -162,11 +172,15 @@ export const useProgressInteraction = ({
       document.body.style.userSelect = 'none';
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleMouseMove, { passive: false });
+      window.addEventListener('touchend', handleMouseUp);
 
       return () => {
         document.body.style.userSelect = '';
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('touchmove', handleMouseMove);
+        window.removeEventListener('touchend', handleMouseUp);
       };
     }
   }, [isDragging, draggingMarker, isDraggingSegment, duration, loopStart, loopEnd, loops]);
