@@ -132,9 +132,27 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
         setToken(storedToken);
         if (storedRefreshToken) {
           setRefreshToken(storedRefreshToken);
-          // Schedule a refresh for 55 minutes from now (assuming standard 1-hour expiration)
-          // If token is older, it will be refreshed sooner on next API call
-          scheduleTokenRefresh(3300);
+
+          // Check token expiration
+          const expiresAtStr = localStorage.getItem('spotify_token_expires_at');
+          if (expiresAtStr) {
+            const expiresAt = parseInt(expiresAtStr, 10);
+            const timeUntilExpiry = expiresAt - Date.now();
+            const minutesUntilExpiry = timeUntilExpiry / 1000 / 60;
+
+            // If token expires within 30 minutes, refresh immediately
+            if (minutesUntilExpiry < 30) {
+              console.log(`Token expires in ${Math.floor(minutesUntilExpiry)} minutes, refreshing now...`);
+              void refreshAccessToken();
+            } else {
+              // Schedule refresh for 55 minutes before expiration
+              const secondsUntilExpiry = timeUntilExpiry / 1000;
+              scheduleTokenRefresh(secondsUntilExpiry);
+            }
+          } else {
+            // No expiration time stored, assume standard 1-hour expiration from now
+            scheduleTokenRefresh(3300);
+          }
         }
         if (storedUserId) {
           setSpotifyUserId(storedUserId);
@@ -182,13 +200,15 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
         localStorage.setItem('spotify_refresh_token', data.refresh_token);
       }
 
-      localStorage.removeItem('code_verifier');
-      await fetchSpotifyUserProfile(data.access_token);
-
-      // Schedule proactive refresh
+      // Store token expiration time
       if (data.expires_in) {
+        const expiresAt = Date.now() + data.expires_in * 1000;
+        localStorage.setItem('spotify_token_expires_at', expiresAt.toString());
         scheduleTokenRefresh(data.expires_in);
       }
+
+      localStorage.removeItem('code_verifier');
+      await fetchSpotifyUserProfile(data.access_token);
     } catch (err) {
       console.error('Authentication error:', err);
       setError('Authentication failed. Please try logging in again.');
@@ -197,6 +217,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
       localStorage.removeItem('spotify_token');
       localStorage.removeItem('spotify_refresh_token');
       localStorage.removeItem('spotify_user_id');
+      localStorage.removeItem('spotify_token_expires_at');
       setToken('');
       setRefreshToken('');
       setSpotifyUserId('');
