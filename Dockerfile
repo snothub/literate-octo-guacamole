@@ -1,5 +1,5 @@
 # Stage 1: Build frontend
-FROM node:22-alpine AS frontend-builder
+FROM node:25-alpine AS frontend-builder
 WORKDIR /app
 
 # Copy package files
@@ -20,7 +20,7 @@ ARG VERSION
 RUN if [ -n "$VERSION" ]; then echo "{\"version\":\"$VERSION\"}" > dist/version.json; fi
 
 # Stage 2: Backend with frontend
-FROM node:22-alpine
+FROM node:25-alpine
 WORKDIR /app
 
 # Install openssl (needed for Prisma)
