@@ -152,16 +152,13 @@ export default function App() {
       setLoopEndValue(null);
     }
 
-    // Calculate what end value will be set (same logic as setLoopEndPoint)
-    const newEnd = loopStart !== null && progress < loopStart ? loopStart : progress;
-
     setLoopEndPoint();
     // Automatically add a new loop if both start and end are set
     // This allows creating new loops even when an existing loop is active
     if (loopStart !== null) {
-      // Pass the captured values to avoid state update timing issues
+      // Need to wait a tick for the state to update
       setTimeout(() => {
-        addLoop(loopStart, newEnd);
+        addLoop();
       }, 0);
     }
   };
