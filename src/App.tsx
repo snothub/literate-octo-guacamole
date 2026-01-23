@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LoginScreen } from './components/LoginScreen';
 import { PlayBar } from './components/PlayBar';
-import { RecentTracksPane } from './components/RecentTracksPane';
 import { SearchPanel } from './components/SearchPanel';
 import { FirstTimeTooltip } from './components/FirstTimeTooltip';
 import { useGlobalSpacebar } from './hooks/useGlobalSpacebar';
