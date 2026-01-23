@@ -150,8 +150,9 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
               scheduleTokenRefresh(secondsUntilExpiry);
             }
           } else {
-            // No expiration time stored, assume standard 1-hour expiration from now
-            scheduleTokenRefresh(3300);
+            // No expiration time stored - refresh immediately to be safe
+            console.log('No token expiration info found, refreshing immediately...');
+            void refreshAccessToken();
           }
         }
         if (storedUserId) {
