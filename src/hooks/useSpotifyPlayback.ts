@@ -36,6 +36,12 @@ export const useSpotifyPlayback = ({
   const [progress, setProgress] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const progressInterval = useRef<number | null>(null);
+  const tokenRef = useRef<string>(token);
+
+  // Keep token ref in sync with the current token prop
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -48,7 +54,7 @@ export const useSpotifyPlayback = ({
     window.onSpotifyWebPlaybackSDKReady = () => {
       const p = new window.Spotify.Player({
         name: 'Music Man App',
-        getOAuthToken: (cb) => cb(token),
+        getOAuthToken: (cb) => cb(tokenRef.current),
         volume: 0.5,
       });
 
