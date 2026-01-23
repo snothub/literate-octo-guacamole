@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     allowedHosts: [
       'nonapprehensible-mesenteric-catheryn.ngrok-free.dev',
-      '5537d9798bca.ngrok-free.app'
+      'a68b983276d5.ngrok-free.app'
     ],
   },
 })
