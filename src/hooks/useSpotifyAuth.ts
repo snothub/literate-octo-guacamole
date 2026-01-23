@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getClientId, REDIRECT_URI, SCOPES } from '../config/spotify';
 import { base64encode, generateRandomString, sha256 } from '../utils/pkce';
 
@@ -17,6 +17,97 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
   const [refreshToken, setRefreshToken] = useState<string>('');
   const [spotifyUserId, setSpotifyUserId] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const refreshTimerRef = useRef<number | null>(null);
+
+  const fetchSpotifyUserProfile = async (accessToken: string) => {
+    try {
+      const response = await fetch('https://api.spotify.com/v1/me', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const userData = await response.json();
+      setSpotifyUserId(userData.id);
+      localStorage.setItem('spotify_user_id', userData.id);
+    } catch (err) {
+      console.error('Failed to fetch Spotify user profile:', err);
+    }
+  };
+
+  const refreshAccessToken = async (): Promise<string | null> => {
+    const currentRefreshToken = refreshToken || localStorage.getItem('spotify_refresh_token');
+    if (!currentRefreshToken) {
+      console.error('No refresh token available');
+      return null;
+    }
+
+    try {
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: getClientId(),
+          grant_type: 'refresh_token',
+          refresh_token: currentRefreshToken,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
+      }
+
+      const data = await response.json();
+      setToken(data.access_token);
+      localStorage.setItem('spotify_token', data.access_token);
+
+      if (data.refresh_token) {
+        setRefreshToken(data.refresh_token);
+        localStorage.setItem('spotify_refresh_token', data.refresh_token);
+      }
+
+      // Schedule the next refresh
+      if (data.expires_in) {
+        scheduleTokenRefresh(data.expires_in);
+      }
+
+      console.log('Token successfully refreshed');
+      return data.access_token;
+    } catch (err) {
+      console.error('Token refresh failed:', err);
+      setError('Session expired. Please log in again.');
+      localStorage.removeItem('spotify_token');
+      localStorage.removeItem('spotify_refresh_token');
+      localStorage.removeItem('spotify_user_id');
+      setToken('');
+      setRefreshToken('');
+      setSpotifyUserId('');
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+      return null;
+    }
+  };
+
+  const scheduleTokenRefresh = (expiresIn: number) => {
+    // Clear any existing timer
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+    }
+
+    // Refresh 5 minutes before expiration (or earlier if expires_in < 5 min)
+    const refreshIn = Math.max(0, (expiresIn - 300) * 1000);
+    console.log(`Token will be refreshed in ${Math.floor(refreshIn / 1000 / 60)} minutes`);
+
+    refreshTimerRef.current = window.setTimeout(async () => {
+      console.log('Proactively refreshing Spotify token...');
+      await refreshAccessToken();
+    }, refreshIn);
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -41,6 +132,8 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
         setToken(storedToken);
         if (storedRefreshToken) {
           setRefreshToken(storedRefreshToken);
+          // Proactively refresh on app load if we have a refresh token
+          void refreshAccessToken();
         }
         if (storedUserId) {
           setSpotifyUserId(storedUserId);
@@ -49,6 +142,12 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
         }
       }
     }
+
+    return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
   }, []);
 
   const exchangeCodeForToken = async (code: string, codeVerifier: string) => {
@@ -84,6 +183,11 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
 
       localStorage.removeItem('code_verifier');
       await fetchSpotifyUserProfile(data.access_token);
+
+      // Schedule proactive refresh
+      if (data.expires_in) {
+        scheduleTokenRefresh(data.expires_in);
+      }
     } catch (err) {
       console.error('Authentication error:', err);
       setError('Authentication failed. Please try logging in again.');
@@ -95,70 +199,6 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
       setToken('');
       setRefreshToken('');
       setSpotifyUserId('');
-    }
-  };
-
-  const refreshAccessToken = async (): Promise<string | null> => {
-    if (!refreshToken) {
-      console.error('No refresh token available');
-      return null;
-    }
-
-    try {
-      const response = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          client_id: getClientId(),
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to refresh token');
-      }
-
-      const data = await response.json();
-      setToken(data.access_token);
-      localStorage.setItem('spotify_token', data.access_token);
-
-      if (data.refresh_token) {
-        setRefreshToken(data.refresh_token);
-        localStorage.setItem('spotify_refresh_token', data.refresh_token);
-      }
-
-      return data.access_token;
-    } catch (err) {
-      console.error('Token refresh failed:', err);
-      setError('Session expired. Please log in again.');
-      localStorage.removeItem('spotify_token');
-      localStorage.removeItem('spotify_refresh_token');
-      localStorage.removeItem('spotify_user_id');
-      setToken('');
-      setRefreshToken('');
-      setSpotifyUserId('');
-      return null;
-    }
-  };
-
-  const fetchSpotifyUserProfile = async (accessToken: string) => {
-    try {
-      const response = await fetch('https://api.spotify.com/v1/me', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user profile');
-      }
-
-      const userData = await response.json();
-      setSpotifyUserId(userData.id);
-      localStorage.setItem('spotify_user_id', userData.id);
-    } catch (err) {
-      console.error('Failed to fetch Spotify user profile:', err);
     }
   };
 
