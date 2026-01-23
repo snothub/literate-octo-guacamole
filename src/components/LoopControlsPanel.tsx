@@ -1,5 +1,3 @@
-import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
 import type { LoopSegment } from '../types/ui';
 import { formatTimeInput, formatTime } from '../utils/time';
 
@@ -32,29 +30,12 @@ export const LoopControlsPanel = ({
   onUpdateLabel,
   onSeekLoop,
 }: LoopControlsPanelProps) => {
-  const [isOpen, setIsOpen] = useState(false);
   const activeLoop = loops.find((loop) => loop.id === activeLoopId) || null;
   const canAddLoop = loopStart !== null && loopEnd !== null && loopStart < loopEnd;
 
   return (
-    <div className="w-full flex flex-col">
-      <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-700/50 flex flex-col overflow-hidden">
-        {/* Unified Header */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between gap-2 p-4 sm:p-5 hover:bg-gray-800/50 transition-all border-b border-gray-700/30"
-          aria-expanded={isOpen}
-        >
-          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-            <span className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full"></span>
-            Loop Controls
-          </h3>
-          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-
-        {/* Expandable Content */}
-        {isOpen && (
-          <div className="max-h-[calc(100vh-20rem)] overflow-y-auto px-4 sm:px-5 py-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+    <div className="w-full">
+      <div className="space-y-2.5 px-4 sm:px-5 py-3">
           <div className="space-y-2.5">
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium text-emerald-300 flex-shrink-0 min-w-fit">Start</label>
@@ -207,10 +188,6 @@ export const LoopControlsPanel = ({
               </div>
             </div>
           )}
-          </div>
-
-        </div>
-        )}
       </div>
     </div>
   );

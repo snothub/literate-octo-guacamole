@@ -305,51 +305,49 @@ export default function App() {
         </div>
       </div>
 
-      {selected && (
-        <PlayBar
-          playing={playing}
-          usingPreview={usingPreview}
-          loopStart={loopStart}
-          loopEnd={loopEnd}
-          loops={loops}
-          activeLoopId={activeLoopId}
-          progress={progress}
-          duration={duration}
-          isDragging={isDragging}
-          magnifier={magnifier}
-          draggingMarker={draggingMarker}
-          segmentWasDragged={segmentWasDragged}
-          lyrics={lyrics}
-          lyricsLoading={lyricsLoading}
-          lyricsContainerRef={lyricsContainerRef}
-          onLyricsLineClick={(timeMs) => {
-            void playFromPosition(timeMs);
-          }}
-          progressBarRef={progressBarRef}
-          onTogglePlay={togglePlay}
-          onSetLoopStart={setLoopStartPoint}
-          onSetLoopEnd={handleSetLoopEnd}
-          onClearLoop={clearLoop}
-          onSkipBack={(seconds) => {
-            void seekToMs(Math.max(0, progress - seconds * 1000));
-          }}
-          onSkipForward={(seconds) => {
-            void seekToMs(Math.min(duration, progress + seconds * 1000));
-          }}
-          onProgressMouseDown={handleMouseDown}
-          onMarkerMouseDown={handleMarkerMouseDown}
-          onLoopClick={handleLoopClick}
-          onSegmentMouseDown={handleSegmentMouseDown}
-          recentTracks={recentTracks}
-          onSelectTrack={handleSelectTrack}
-          onLoopStartChange={handleLoopStartChange}
-          onLoopEndChange={handleLoopEndChange}
-          onLoopEnabledChange={setLoopEnabled}
-          onAddLoop={addLoop}
-          onRemoveLoop={removeLoop}
-          onUpdateLoopLabel={updateLoopLabel}
-        />
-      )}
+      <PlayBar
+        playing={playing}
+        usingPreview={usingPreview}
+        loopStart={loopStart}
+        loopEnd={loopEnd}
+        loops={loops}
+        activeLoopId={activeLoopId}
+        progress={progress}
+        duration={duration}
+        isDragging={isDragging}
+        magnifier={magnifier}
+        draggingMarker={draggingMarker}
+        segmentWasDragged={segmentWasDragged}
+        lyrics={lyrics}
+        lyricsLoading={lyricsLoading}
+        lyricsContainerRef={lyricsContainerRef}
+        onLyricsLineClick={(timeMs) => {
+          void playFromPosition(timeMs);
+        }}
+        progressBarRef={progressBarRef}
+        onTogglePlay={togglePlay}
+        onSetLoopStart={setLoopStartPoint}
+        onSetLoopEnd={handleSetLoopEnd}
+        onClearLoop={clearLoop}
+        onSkipBack={(seconds) => {
+          void seekToMs(Math.max(0, progress - seconds * 1000));
+        }}
+        onSkipForward={(seconds) => {
+          void seekToMs(Math.min(duration, progress + seconds * 1000));
+        }}
+        onProgressMouseDown={handleMouseDown}
+        onMarkerMouseDown={handleMarkerMouseDown}
+        onLoopClick={handleLoopClick}
+        onSegmentMouseDown={handleSegmentMouseDown}
+        recentTracks={recentTracks}
+        onSelectTrack={handleSelectTrack}
+        onLoopStartChange={handleLoopStartChange}
+        onLoopEndChange={handleLoopEndChange}
+        onLoopEnabledChange={setLoopEnabled}
+        onAddLoop={addLoop}
+        onRemoveLoop={removeLoop}
+        onUpdateLoopLabel={updateLoopLabel}
+      />
     </div>
   );
 }

@@ -204,7 +204,8 @@ export const useLoopControls = ({
   };
 
   const addLoop = () => {
-    const start = progress;
+    // Use existing loopStart if set, otherwise use current progress
+    const start = loopStart !== null ? loopStart : progress;
     let end = loopEnd;
     if (end === null || end <= start) {
       end = Math.min(start + 5000, duration);
