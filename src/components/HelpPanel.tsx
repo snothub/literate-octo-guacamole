@@ -41,13 +41,6 @@ export const HelpPanel = () => {
       {isOpen && (
         <div className="px-4 pt-0 pb-4 sm:px-5 sm:pb-5 border-t border-gray-700/30 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="text-center space-y-2 pt-3">
-            <div className="text-4xl">🎵</div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-white">Music Man</h3>
-            <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-              Perfect for practicing music, dance choreography, or learning lyrics. Create custom loops to repeat any section of a song.
-            </p>
-          </div>
           <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 space-y-2.5">
             <p className="text-emerald-400 font-semibold text-xs sm:text-sm">How to use:</p>
             <ol className="text-left text-xs text-gray-300 space-y-1.5 leading-relaxed">
@@ -69,9 +62,6 @@ export const HelpPanel = () => {
               </li>
             </ol>
           </div>
-          <p className="text-xs text-gray-500 pt-1">
-            💡 Tip: Create multiple loops per track and fine-tune with keyboard shortcuts!
-          </p>
           </div>
         </div>
       )}
