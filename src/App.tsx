@@ -137,12 +137,14 @@ export default function App() {
   };
 
   const handleSetLoopEnd = () => {
+    // Capture the value that will be set before state updates
+    const endValue = loopStart !== null && progress < loopStart ? loopStart : progress;
     setLoopEndPoint();
     // Automatically add a new loop if both start and end are set and no active loop exists
     if (loopStart !== null && !activeLoopId) {
       // Need to wait a tick for the state to update
       setTimeout(() => {
-        addLoop();
+        addLoop(endValue);
       }, 0);
     }
   };

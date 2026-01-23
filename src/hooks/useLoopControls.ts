@@ -20,7 +20,7 @@ type LoopControlsState = {
   selectLoop: (loopId: string) => void;
   deselectLoop: () => void;
   clearSelection: () => void;
-  addLoop: () => void;
+  addLoop: (capturedEndValue?: number) => void;
   removeLoop: (loopId: string) => void;
   clearLoop: () => void;
   setLoopEnabled: (enabled: boolean) => void;
@@ -214,10 +214,11 @@ export const useLoopControls = ({
     setLoopEnabled(false);
   };
 
-  const addLoop = () => {
+  const addLoop = (capturedEndValue?: number) => {
     // Use existing loopStart if set, otherwise use current progress
     const start = loopStart !== null ? loopStart : progress;
-    let end = loopEnd;
+    // Use captured end value if provided (to handle async state updates), otherwise use state value
+    let end = capturedEndValue !== undefined ? capturedEndValue : loopEnd;
     if (end === null || end <= start) {
       end = Math.min(start + 5000, duration);
       setLoopEnd(end);
