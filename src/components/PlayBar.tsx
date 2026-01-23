@@ -5,6 +5,7 @@ import type { LyricLine } from '../types/spotify';
 import type { LoopSegment, MagnifierState } from '../types/ui';
 import { LyricsDisplay } from './LyricsDisplay';
 import { LoopControlsPanel } from './LoopControlsPanel';
+import { SavedLoopsPane } from './SavedLoopsPane';
 import { ProgressBar } from './ProgressBar';
 import { PlayControls } from './PlayControls';
 import { RecentTracksPane } from './RecentTracksPane';
@@ -84,7 +85,7 @@ export const PlayBar = ({
   onRemoveLoop,
   onUpdateLoopLabel,
 }: PlayBarProps) => {
-  const [activeTab, setActiveTab] = useState<'controls' | 'lyrics' | 'loop' | 'recent'>('controls');
+  const [activeTab, setActiveTab] = useState<'controls' | 'lyrics' | 'loop' | 'saved' | 'recent'>('controls');
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-xl border-t border-gray-800 shadow-2xl flex flex-col">
@@ -119,6 +120,16 @@ export const PlayBar = ({
           }`}
         >
           Loop Controls
+        </button>
+        <button
+          onClick={() => setActiveTab('saved')}
+          className={`px-4 py-3 text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
+            activeTab === 'saved'
+              ? 'text-emerald-400 border-b-2 border-emerald-500'
+              : 'text-gray-400 hover:text-gray-300'
+          }`}
+        >
+          Saved Loops
         </button>
         <button
           onClick={() => setActiveTab('recent')}
@@ -169,9 +180,12 @@ export const PlayBar = ({
               onAddLoop={onAddLoop}
               onRemoveLoop={onRemoveLoop}
               onUpdateLabel={onUpdateLoopLabel}
-              onSeekLoop={onLoopClick}
             />
           </div>
+        )}
+
+        {activeTab === 'saved' && (
+          <SavedLoopsPane loops={loops} activeLoopId={activeLoopId} onSeekLoop={onLoopClick} />
         )}
 
         {activeTab === 'recent' && (

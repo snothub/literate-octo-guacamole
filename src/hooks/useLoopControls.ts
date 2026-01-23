@@ -18,6 +18,7 @@ type LoopControlsState = {
   loopEnd: number | null;
   loopEnabled: boolean;
   selectLoop: (loopId: string) => void;
+  deselectLoop: () => void;
   clearSelection: () => void;
   addLoop: () => void;
   removeLoop: (loopId: string) => void;
@@ -168,11 +169,11 @@ export const useLoopControls = ({
         if (savedLoopData.segments && Array.isArray(savedLoopData.segments)) {
           const segments = savedLoopData.segments as LoopSegment[];
           setLoops(segments);
+          // Only set activeLoopId if it was explicitly saved, don't auto-select
           if (savedLoopData.activeLoopId) {
             setActiveLoopId(savedLoopData.activeLoopId);
-          } else if (segments.length > 0) {
-            setActiveLoopId(segments[0].id);
           }
+          // Note: Don't auto-select the first loop - let user choose
           setLoopEnabled(savedLoopData.loopEnabled);
         }
         // Fallback to old format (single loop from loopStart/loopEnd)
@@ -185,7 +186,10 @@ export const useLoopControls = ({
             label: 'Loop 1',
           };
           setLoops([loop]);
-          setActiveLoopId(loop.id);
+          // Only select if it was previously active
+          if (savedLoopData.loopEnabled) {
+            setActiveLoopId(loop.id);
+          }
           setLoopEnabled(savedLoopData.loopEnabled);
         }
       }
@@ -194,6 +198,13 @@ export const useLoopControls = ({
 
   const selectLoop = (loopId: string) => {
     setActiveLoopId(loopId);
+  };
+
+  const deselectLoop = () => {
+    setActiveLoopId(null);
+    setLoopStart(null);
+    setLoopEnd(null);
+    setLoopEnabled(false);
   };
 
   const clearSelection = () => {
@@ -335,6 +346,7 @@ export const useLoopControls = ({
     loopEnd,
     loopEnabled,
     selectLoop,
+    deselectLoop,
     clearSelection,
     addLoop,
     removeLoop,

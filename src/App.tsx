@@ -51,6 +51,7 @@ export default function App() {
     loopEnd,
     loopEnabled,
     selectLoop,
+    deselectLoop,
     addLoop,
     removeLoop,
     setLoopEnabled,
@@ -135,27 +136,10 @@ export default function App() {
     }
   };
 
-  const handleStartNewLoopDefinition = () => {
-    // If there's an active loop, we're starting a fresh loop definition
-    // Clear the current loop points to start fresh
-    if (activeLoopId) {
-      setLoopStartValue(null);
-      setLoopEndValue(null);
-    }
-    setLoopStartPoint();
-  };
-
   const handleSetLoopEnd = () => {
-    // If there's an active loop and we haven't manually set loopStart yet, start fresh
-    if (activeLoopId && loopStart === null) {
-      setLoopStartValue(null);
-      setLoopEndValue(null);
-    }
-
     setLoopEndPoint();
-    // Automatically add a new loop if both start and end are set
-    // This allows creating new loops even when an existing loop is active
-    if (loopStart !== null) {
+    // Automatically add a new loop if both start and end are set and no active loop exists
+    if (loopStart !== null && !activeLoopId) {
       // Need to wait a tick for the state to update
       setTimeout(() => {
         addLoop();
@@ -181,7 +165,7 @@ export default function App() {
 
       if (key === 's') {
         event.preventDefault();
-        handleStartNewLoopDefinition();
+        setLoopStartPoint();
         return;
       }
       if (key === 'e') {
@@ -239,8 +223,14 @@ export default function App() {
   ]);
 
   const handleLoopClick = async (loop: LoopSegment) => {
-    selectLoop(loop.id);
-    await playFromPosition(loop.start);
+    if (activeLoopId === loop.id) {
+      // Toggle off - deselect the loop
+      deselectLoop();
+    } else {
+      // Toggle on - select the loop and play from its start
+      selectLoop(loop.id);
+      await playFromPosition(loop.start);
+    }
   };
 
   const handleSelectTrack = async (track: Track) => {
@@ -343,7 +333,7 @@ export default function App() {
         }}
         progressBarRef={progressBarRef}
         onTogglePlay={togglePlay}
-        onSetLoopStart={handleStartNewLoopDefinition}
+        onSetLoopStart={setLoopStartPoint}
         onSetLoopEnd={handleSetLoopEnd}
         onClearLoop={clearLoop}
         onSkipBack={(seconds) => {

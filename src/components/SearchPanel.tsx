@@ -32,7 +32,7 @@ export const SearchPanel = ({
       <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
         <Music className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-500" />
         <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-          Spotify Loop Trainer
+          Music Man
         </h1>
       </div>
 

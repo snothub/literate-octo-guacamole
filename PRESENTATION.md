@@ -1,4 +1,4 @@
-# 🎵 Spotify Loop Trainer
+# 🎵 Music Man
 ### Master Any Song, One Loop at a Time
 
 ---
@@ -329,7 +329,7 @@ npm run dev
 **Remember:** Every master musician practiced in loops.
 Now you can too, with precision and ease.
 
-🎵 **Spotify Loop Trainer** - Master any song, one loop at a time.
+🎵 **Music Man** - Master any song, one loop at a time.
 
 ---
 

@@ -43,7 +43,7 @@ export const HelpPanel = () => {
           <div className="text-center space-y-2 pt-3">
             <div className="text-4xl">🎵</div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-white">Spotify Loop Trainer</h3>
+              <h3 className="text-base sm:text-lg font-bold text-white">Music Man</h3>
             <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
               Perfect for practicing music, dance choreography, or learning lyrics. Create custom loops to repeat any section of a song.
             </p>
