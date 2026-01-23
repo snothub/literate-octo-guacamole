@@ -1,4 +1,4 @@
-import { Circle, CircleDot, Pause, Play, SkipBack, SkipForward, X } from 'lucide-react';
+import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { useState } from 'react';
 
 type PlayControlsProps = {
