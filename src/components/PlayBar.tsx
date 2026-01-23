@@ -224,15 +224,18 @@ export const PlayBar = ({
             >
               <Circle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
-            {(loopStart !== null || loopEnd !== null) && (
-              <button
-                onClick={onClearLoop}
-                className="p-1 sm:p-1.5 rounded-lg bg-gray-700 text-gray-400 hover:bg-gray-600 transition-all shadow-md active:scale-95"
-                title="Clear loop"
-              >
-                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            )}
+            <button
+              onClick={onClearLoop}
+              disabled={loopStart === null && loopEnd === null && activeLoopId === null}
+              className={`p-1 sm:p-1.5 rounded-lg transition-all shadow-md active:scale-95 ${
+                loopStart !== null || loopEnd !== null || activeLoopId !== null
+                  ? 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  : 'bg-gray-800 text-gray-600'
+              } disabled:opacity-30 disabled:cursor-not-allowed`}
+              title="Clear loop"
+            >
+              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
           </div>
 
           {/* Progress Bar - Right, Flex Fill */}
