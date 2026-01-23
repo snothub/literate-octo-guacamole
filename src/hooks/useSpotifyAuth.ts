@@ -132,8 +132,9 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
         setToken(storedToken);
         if (storedRefreshToken) {
           setRefreshToken(storedRefreshToken);
-          // Proactively refresh on app load if we have a refresh token
-          void refreshAccessToken();
+          // Schedule a refresh for 55 minutes from now (assuming standard 1-hour expiration)
+          // If token is older, it will be refreshed sooner on next API call
+          scheduleTokenRefresh(3300);
         }
         if (storedUserId) {
           setSpotifyUserId(storedUserId);
