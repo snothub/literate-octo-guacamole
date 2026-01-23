@@ -75,7 +75,7 @@ export const LoopControlsPanel = ({
             id="loopEnabled"
             checked={loopEnabled}
             onChange={(e) => onLoopEnabledChange(e.target.checked)}
-            disabled={!activeLoop || loopStart === null || loopEnd === null || loopStart >= loopEnd}
+            disabled={!activeLoop && (loopStart === null || loopEnd === null || loopStart >= loopEnd)}
             className="w-5 h-5 rounded-md border-2 border-gray-600 bg-gray-900/60 text-emerald-500 focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-0 focus:border-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all checked:bg-gradient-to-br checked:from-emerald-500 checked:to-emerald-600 checked:border-emerald-500 checked:shadow-lg checked:shadow-emerald-500/20"
           />
           <label htmlFor="loopEnabled" className="text-sm font-medium text-white select-none cursor-pointer">
