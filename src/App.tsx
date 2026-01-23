@@ -317,6 +317,7 @@ export default function App() {
         usingPreview={usingPreview}
         loopStart={loopStart}
         loopEnd={loopEnd}
+        loopEnabled={loopEnabled}
         loops={loops}
         activeLoopId={activeLoopId}
         progress={progress}

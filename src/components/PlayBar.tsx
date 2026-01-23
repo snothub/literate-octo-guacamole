@@ -15,6 +15,7 @@ type PlayBarProps = {
   usingPreview: boolean;
   loopStart: number | null;
   loopEnd: number | null;
+  loopEnabled: boolean;
   loops: LoopSegment[];
   activeLoopId: string | null;
   progress: number;
@@ -53,6 +54,7 @@ export const PlayBar = ({
   usingPreview,
   loopStart,
   loopEnd,
+  loopEnabled,
   loops,
   activeLoopId,
   progress,
@@ -173,7 +175,7 @@ export const PlayBar = ({
               activeLoopId={activeLoopId}
               loopStart={loopStart}
               loopEnd={loopEnd}
-              loopEnabled={playing && activeLoopId !== null}
+              loopEnabled={loopEnabled}
               onLoopStartChange={onLoopStartChange}
               onLoopEndChange={onLoopEndChange}
               onLoopEnabledChange={onLoopEnabledChange}
