@@ -88,9 +88,9 @@ jobs:
 
         # Show what changed
         echo "Changes to be committed:"
-        git diff argocd/
+        git diff helm-chart/
 
         # Commit and push
-        git add argocd/application.yaml
+        git add helm-chart/values-prod.yaml
         git commit -m "chore: update image versions to ${{ env.VERSION }}"
         git push origin main
