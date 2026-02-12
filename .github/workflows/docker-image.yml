@@ -75,7 +75,7 @@ jobs:
         echo "Handling version ${{ env.VERSION }}"
 
         # Update dev environment
-        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" helm-chart/version-prod.yaml
+        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" helm-chart/values-prod.yaml
 
         # Update prod environment
         # sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" argocd/application-prod.yaml
