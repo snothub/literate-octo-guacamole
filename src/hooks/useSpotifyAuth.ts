@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getClientId, REDIRECT_URI, SCOPES } from '../config/spotify';
 import { base64encode, generateRandomString, sha256 } from '../utils/pkce';
+import { logger } from '../utils/logger';
 
 type SpotifyAuthState = {
   token: string;
@@ -20,6 +21,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
   const refreshTimerRef = useRef<number | null>(null);
 
   const fetchSpotifyUserProfile = async (accessToken: string) => {
+    logger.info('useSpotifyAuth', 'user_profile_fetch_start');
     try {
       const response = await fetch('https://api.spotify.com/v1/me', {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -32,18 +34,22 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
       const userData = await response.json();
       setSpotifyUserId(userData.id);
       localStorage.setItem('spotify_user_id', userData.id);
+      logger.info('useSpotifyAuth', 'user_profile_fetch_success', { userId: userData.id });
     } catch (err) {
-      console.error('Failed to fetch Spotify user profile:', err);
+      logger.error('useSpotifyAuth', 'user_profile_fetch_failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   };
 
   const refreshAccessToken = async (): Promise<string | null> => {
     const currentRefreshToken = refreshToken || localStorage.getItem('spotify_refresh_token');
     if (!currentRefreshToken) {
-      console.error('No refresh token available');
+      logger.error('useSpotifyAuth', 'token_refresh_failed', { reason: 'no_refresh_token' });
       return null;
     }
 
+    logger.info('useSpotifyAuth', 'token_refresh_start');
     try {
       const response = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
@@ -75,10 +81,12 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
         scheduleTokenRefresh(data.expires_in);
       }
 
-      console.log('Token successfully refreshed');
+      logger.info('useSpotifyAuth', 'token_refresh_success', { expiresIn: data.expires_in });
       return data.access_token;
     } catch (err) {
-      console.error('Token refresh failed:', err);
+      logger.error('useSpotifyAuth', 'token_refresh_failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       setError('Session expired. Please log in again.');
       localStorage.removeItem('spotify_token');
       localStorage.removeItem('spotify_refresh_token');
@@ -101,10 +109,12 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
 
     // Refresh 5 minutes before expiration (or earlier if expires_in < 5 min)
     const refreshIn = Math.max(0, (expiresIn - 300) * 1000);
-    console.log(`Token will be refreshed in ${Math.floor(refreshIn / 1000 / 60)} minutes`);
+    logger.info('useSpotifyAuth', 'token_refresh_scheduled', {
+      refreshInMinutes: Math.floor(refreshIn / 1000 / 60),
+    });
 
     refreshTimerRef.current = window.setTimeout(async () => {
-      console.log('Proactively refreshing Spotify token...');
+      logger.info('useSpotifyAuth', 'token_refresh_proactive');
       await refreshAccessToken();
     }, refreshIn);
   };
@@ -114,6 +124,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
     const code = params.get('code');
 
     if (code) {
+      logger.info('useSpotifyAuth', 'oauth_callback_received');
       const codeVerifier = localStorage.getItem('code_verifier');
       window.history.replaceState(null, '', window.location.pathname);
 
@@ -121,6 +132,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
         void exchangeCodeForToken(code, codeVerifier);
       } else {
         localStorage.removeItem('code_verifier');
+        logger.error('useSpotifyAuth', 'oauth_callback_failed', { reason: 'missing_code_verifier' });
         setError('Authentication failed. Please try logging in again.');
       }
     } else {
@@ -129,6 +141,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
       const storedUserId = localStorage.getItem('spotify_user_id');
 
       if (storedToken) {
+        logger.info('useSpotifyAuth', 'session_restored');
         setToken(storedToken);
         if (storedRefreshToken) {
           setRefreshToken(storedRefreshToken);
@@ -142,7 +155,9 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
 
             // If token expires within 30 minutes, refresh immediately
             if (minutesUntilExpiry < 30) {
-              console.log(`Token expires in ${Math.floor(minutesUntilExpiry)} minutes, refreshing now...`);
+              logger.info('useSpotifyAuth', 'token_expiring_soon', {
+                minutesUntilExpiry: Math.floor(minutesUntilExpiry),
+              });
               void refreshAccessToken();
             } else {
               // Schedule refresh for 55 minutes before expiration
@@ -151,7 +166,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
             }
           } else {
             // No expiration time stored - refresh immediately to be safe
-            console.log('No token expiration info found, refreshing immediately...');
+            logger.info('useSpotifyAuth', 'token_no_expiry_info');
             void refreshAccessToken();
           }
         }
@@ -171,6 +186,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
   }, []);
 
   const exchangeCodeForToken = async (code: string, codeVerifier: string) => {
+    logger.info('useSpotifyAuth', 'token_exchange_start');
     try {
       const response = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
@@ -188,7 +204,10 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Token exchange failed:', response.status, errorData);
+        logger.error('useSpotifyAuth', 'token_exchange_failed', {
+          status: response.status,
+          errorData,
+        });
         throw new Error(`Failed to exchange code for token: ${response.status}`);
       }
 
@@ -209,9 +228,12 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
       }
 
       localStorage.removeItem('code_verifier');
+      logger.info('useSpotifyAuth', 'token_exchange_success', { expiresIn: data.expires_in });
       await fetchSpotifyUserProfile(data.access_token);
     } catch (err) {
-      console.error('Authentication error:', err);
+      logger.error('useSpotifyAuth', 'authentication_error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       setError('Authentication failed. Please try logging in again.');
 
       localStorage.removeItem('code_verifier');
@@ -237,6 +259,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
     let response = await makeRequest(token);
 
     if (response.status === 401 && refreshToken) {
+      logger.info('useSpotifyAuth', 'spotifyfetch_retry', { url, reason: '401_unauthorized' });
       const newToken = await refreshAccessToken();
       if (newToken) {
         response = await makeRequest(newToken);
@@ -247,6 +270,7 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
   };
 
   const login = async () => {
+    logger.info('useSpotifyAuth', 'oauth_init');
     const codeVerifier = generateRandomString(64);
     const hashed = await sha256(codeVerifier);
     const codeChallenge = base64encode(hashed);
@@ -274,4 +298,3 @@ export const useSpotifyAuth = (): SpotifyAuthState => {
     spotifyFetch,
   };
 };
-

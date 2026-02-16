@@ -12,6 +12,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
       PORT: 4000
       VITE_SPOTIFY_CLIENT_ID: ${VITE_SPOTIFY_CLIENT_ID:-011c5f27eef64dd0b6f65ca673215a58}
+      VITE_LOG_LEVEL: ${VITE_LOG_LEVEL:-info}
     depends_on:
       db:
         condition: service_healthy

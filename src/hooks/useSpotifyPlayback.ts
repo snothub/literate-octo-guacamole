@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SpotifyPlayer, SpotifyState, Track } from '../types/spotify';
+import { logger } from '../utils/logger';
 
 type UseSpotifyPlaybackArgs = {
   token: string;
@@ -46,6 +47,7 @@ export const useSpotifyPlayback = ({
   useEffect(() => {
     if (!token) return;
 
+    logger.info('useSpotifyPlayback', 'sdk_init');
     const script = document.createElement('script');
     script.src = 'https://sdk.scdn.co/spotify-player.js';
     script.async = true;
@@ -61,6 +63,7 @@ export const useSpotifyPlayback = ({
       p.addListener('ready', (state: unknown) => {
         const { device_id } = state as { device_id: string };
         setDeviceId(device_id);
+        logger.info('useSpotifyPlayback', 'sdk_ready', { deviceId: device_id });
       });
 
       p.addListener('player_state_changed', (state: unknown) => {
@@ -94,7 +97,9 @@ export const useSpotifyPlayback = ({
             setDuration(state.duration);
           }
         } catch (err) {
-          console.error('Error getting player state:', err);
+          logger.error('useSpotifyPlayback', 'player_state_error', {
+            error: err instanceof Error ? err.message : String(err),
+          });
           // Continue polling - the player will recover on next attempt
         }
       }, 500);
@@ -124,6 +129,7 @@ export const useSpotifyPlayback = ({
 
   const playPreview = () => {
     if (!selected?.preview_url) return;
+    logger.info('useSpotifyPlayback', 'play_preview_start', { trackId: selected.id });
     const a = new Audio(selected.preview_url);
     a.play();
     a.onended = () => {
@@ -138,6 +144,7 @@ export const useSpotifyPlayback = ({
 
   const playWithSDK = async () => {
     if (!selected || !deviceId) return;
+    logger.info('useSpotifyPlayback', 'play_sdk_start', { trackId: selected.id, deviceId });
     try {
       await spotifyFetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
         method: 'PUT',
@@ -146,7 +153,9 @@ export const useSpotifyPlayback = ({
       });
       setPlaying(true);
       setUsingPreview(false);
+      logger.info('useSpotifyPlayback', 'play_sdk_success', { trackId: selected.id });
     } catch {
+      logger.warn('useSpotifyPlayback', 'play_sdk_failed', { trackId: selected.id, fallback: !!selected.preview_url });
       if (selected.preview_url) playPreview();
       else setError('Playback failed. Premium required for full playback.');
     }
@@ -154,6 +163,7 @@ export const useSpotifyPlayback = ({
 
   const togglePlay = async () => {
     if (!selected) return;
+    logger.debug('useSpotifyPlayback', 'toggle_play', { trackId: selected.id, currentlyPlaying: playing, usingPreview });
     if (playing) {
       if (usingPreview && audio) audio.pause();
       else await player?.pause();
@@ -176,7 +186,9 @@ export const useSpotifyPlayback = ({
             setError('No playback available');
           }
         } catch (err) {
-          console.error('Error getting player state in togglePlay:', err);
+          logger.error('useSpotifyPlayback', 'toggle_play_error', {
+            error: err instanceof Error ? err.message : String(err),
+          });
           // Fallback to SDK or preview
           if (deviceId) {
             await playWithSDK();
@@ -234,6 +246,7 @@ export const useSpotifyPlayback = ({
 
   const seekToMs = (positionMs: number) => {
     if (!selected) return;
+    logger.debug('useSpotifyPlayback', 'seek', { positionMs, usingPreview });
     if (usingPreview && audio) {
       audio.currentTime = positionMs / 1000;
       setProgress(positionMs);
@@ -268,4 +281,3 @@ export const useSpotifyPlayback = ({
     resetPlaybackForTrack,
   };
 };
-

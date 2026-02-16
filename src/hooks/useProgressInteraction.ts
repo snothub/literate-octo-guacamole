@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LoopSegment, MagnifierState } from '../types/ui';
+import { logger } from '../utils/logger';
 
 type UseProgressInteractionArgs = {
   duration: number;
@@ -90,6 +91,7 @@ export const useProgressInteraction = ({
     setIsDragging(true);
     seekToPosition(clientX);
     showMagnifier(clientX);
+    logger.debug('useProgressInteraction', 'seek_bar_interaction');
   };
 
   const handleMouseMove = (e: MouseEvent | TouchEvent) => {
@@ -150,6 +152,7 @@ export const useProgressInteraction = ({
     e.stopPropagation();
     e.preventDefault();
     setDraggingMarker(marker);
+    logger.debug('useProgressInteraction', 'loop_marker_drag', { marker });
   };
 
   const handleSegmentMouseDown = (e: React.MouseEvent | React.TouchEvent, loop: LoopSegment) => {
@@ -202,4 +205,3 @@ export const useProgressInteraction = ({
     handleSegmentMouseDown,
   };
 };
-

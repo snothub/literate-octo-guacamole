@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LyricLine } from '../types/spotify';
+import { logger } from '../utils/logger';
 
 type LyricsState = {
   lyrics: LyricLine[];
@@ -64,6 +65,7 @@ export const useLyrics = (progress: number): LyricsState => {
   const fetchLyrics = async (trackName: string, artistName: string) => {
     setLyricsLoading(true);
     setLyrics([]);
+    logger.info('useLyrics', 'lyrics_fetch_start', { trackName, artistName });
 
     try {
       const response = await fetch(
@@ -79,11 +81,16 @@ export const useLyrics = (progress: number): LyricsState => {
       if (data && data.length > 0 && data[0].syncedLyrics) {
         const parsedLyrics = parseLRC(data[0].syncedLyrics);
         setLyrics(parsedLyrics);
+        logger.info('useLyrics', 'lyrics_fetch_success', { trackName, lineCount: parsedLyrics.length });
       } else {
         setLyrics([]);
+        logger.info('useLyrics', 'lyrics_not_found', { trackName, artistName });
       }
     } catch (err) {
-      console.error('Error fetching lyrics:', err);
+      logger.error('useLyrics', 'lyrics_fetch_failed', {
+        trackName,
+        error: err instanceof Error ? err.message : String(err),
+      });
       setLyrics([]);
     } finally {
       setLyricsLoading(false);
@@ -96,4 +103,3 @@ export const useLyrics = (progress: number): LyricsState => {
 
   return { lyrics, lyricsLoading, lyricsContainerRef, fetchLyrics, clearLyrics };
 };
-

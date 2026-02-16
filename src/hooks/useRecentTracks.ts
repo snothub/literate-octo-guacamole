@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Track } from '../types/spotify';
+import { logger } from '../utils/logger';
 
 type UseRecentTracksArgs = {
   spotifyUserId: string | null;
@@ -28,18 +29,22 @@ export const useRecentTracks = ({ spotifyUserId }: UseRecentTracksArgs): UseRece
     if (!spotifyUserId) return;
 
     setLoading(true);
+    logger.info('useRecentTracks', 'recent_tracks_load_start');
     try {
       const response = await fetch(`/api/recent-tracks/${spotifyUserId}`);
 
       if (!response.ok) {
-        console.error('Failed to load recent tracks:', response.status);
+        logger.error('useRecentTracks', 'recent_tracks_load_failed', { status: response.status });
         return;
       }
 
       const tracks = await response.json();
       setRecentTracks(tracks);
+      logger.info('useRecentTracks', 'recent_tracks_load_success', { count: tracks.length });
     } catch (err) {
-      console.error('Error loading recent tracks:', err);
+      logger.error('useRecentTracks', 'recent_tracks_load_failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     } finally {
       setLoading(false);
     }
@@ -48,6 +53,7 @@ export const useRecentTracks = ({ spotifyUserId }: UseRecentTracksArgs): UseRece
   const addRecentTrack = async (track: Track) => {
     if (!spotifyUserId) return;
 
+    logger.debug('useRecentTracks', 'recent_tracks_save_start', { trackId: track.id });
     try {
       // Optimistically update local state
       setRecentTracks((prev) => {
@@ -66,8 +72,12 @@ export const useRecentTracks = ({ spotifyUserId }: UseRecentTracksArgs): UseRece
           track,
         }),
       });
+      logger.debug('useRecentTracks', 'recent_tracks_save_success', { trackId: track.id });
     } catch (err) {
-      console.error('Error saving recent track:', err);
+      logger.error('useRecentTracks', 'recent_tracks_save_failed', {
+        trackId: track.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
       // Reload from server on error
       await loadRecentTracks();
     }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Track } from '../types/spotify';
+import { logger } from '../utils/logger';
 
 type UseSpotifySearchArgs = {
   token: string;
@@ -26,6 +27,8 @@ export const useSpotifySearch = ({ token, spotifyFetch, setError }: UseSpotifySe
     if (!query.trim() || !token) return;
     setLoading(true);
     setError('');
+    const startTime = performance.now();
+    logger.info('useSpotifySearch', 'search_start', { query });
     try {
       const res = await spotifyFetch(
         `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`
@@ -33,7 +36,16 @@ export const useSpotifySearch = ({ token, spotifyFetch, setError }: UseSpotifySe
       if (!res.ok) throw new Error('Search failed');
       const data = await res.json();
       setResults(data.tracks.items);
+      logger.info('useSpotifySearch', 'search_success', {
+        query,
+        resultCount: data.tracks.items.length,
+        durationMs: Math.round(performance.now() - startTime),
+      });
     } catch {
+      logger.error('useSpotifySearch', 'search_failed', {
+        query,
+        durationMs: Math.round(performance.now() - startTime),
+      });
       setError('Search failed. Please try again.');
     } finally {
       setLoading(false);
@@ -73,4 +85,3 @@ export const useSpotifySearch = ({ token, spotifyFetch, setError }: UseSpotifySe
 
   return { query, setQuery, results, loading, search, resetSearch };
 };
-

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LoopSegment } from '../types/ui';
 import { parseTimeInput } from '../utils/time';
+import { logger } from '../utils/logger';
 
 type UseLoopControlsArgs = {
   progress: number;
@@ -79,6 +80,7 @@ export const useLoopControls = ({
       // Increment loop counter when we hit the end
       const now = Date.now();
       if (now - lastLoopTriggerTime.current > 500) {
+        logger.debug('useLoopControls', 'loop_trigger', { activeLoopId, loopStart, loopEnd, progress });
         setLoops((prev) =>
           prev.map((loop) =>
             loop.id === activeLoopId
@@ -110,6 +112,7 @@ export const useLoopControls = ({
   ) => {
     if (!spotifyUserId) return;
 
+    logger.debug('useLoopControls', 'loop_save_start', { trackId, segmentCount: segments.length });
     try {
       await fetch('/api/loop', {
         method: 'POST',
@@ -124,14 +127,19 @@ export const useLoopControls = ({
           loopEnabled: enabled,
         }),
       });
+      logger.debug('useLoopControls', 'loop_save_success', { trackId });
     } catch (err) {
-      console.error('Error saving loop data:', err);
+      logger.error('useLoopControls', 'loop_save_failed', {
+        trackId,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   };
 
   const loadLoopData = async (trackId: string) => {
     if (!spotifyUserId) return null;
 
+    logger.info('useLoopControls', 'loop_load_start', { trackId });
     try {
       const response = await fetch(`/api/loop/${spotifyUserId}/${trackId}`);
 
@@ -140,6 +148,7 @@ export const useLoopControls = ({
       const data = await response.json();
       if (!data) return null;
 
+      logger.info('useLoopControls', 'loop_load_success', { trackId, hasSegments: !!data.segments });
       // Return data with segments, handling both new and old format
       return {
         segments: data.segments || null,
@@ -150,7 +159,10 @@ export const useLoopControls = ({
         loopEnd: data.loopEnd,
       };
     } catch (err) {
-      console.error('Error loading loop data:', err);
+      logger.error('useLoopControls', 'loop_load_failed', {
+        trackId,
+        error: err instanceof Error ? err.message : String(err),
+      });
       return null;
     }
   };
@@ -233,9 +245,11 @@ export const useLoopControls = ({
     };
     setLoops((prev) => [...prev, loop]);
     setActiveLoopId(loop.id);
+    logger.info('useLoopControls', 'loop_created', { loopId: loop.id, start, end });
   };
 
   const removeLoop = (loopId: string) => {
+    logger.info('useLoopControls', 'loop_deleted', { loopId });
     setLoops((prev) => {
       const updated = prev.filter((loop) => loop.id !== loopId);
       if (loopId === activeLoopId) {
@@ -364,4 +378,3 @@ export const useLoopControls = ({
     initializeLoopForTrack,
   };
 };
-
