@@ -19,6 +19,8 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 
 const SENSITIVE_KEYS = /token|secret|password|authorization|credential/i;
 const MAX_STRING_LENGTH = 500;
+const FLUSH_INTERVAL_MS = 5000;
+const MAX_BATCH_SIZE = 50;
 
 const sessionId = Math.random().toString(36).substring(2, 10);
 
@@ -31,6 +33,61 @@ const configuredLevel: LogLevel = (() => {
   }
   return environment === 'production' ? 'info' : 'debug';
 })();
+
+// --- Batched HTTP transport ---
+
+let logBuffer: LogEntry[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function getLogEndpoint(): string {
+  return '/api/logs';
+}
+
+function scheduleFlush() {
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    void flushLogs();
+  }, FLUSH_INTERVAL_MS);
+}
+
+async function flushLogs() {
+  if (logBuffer.length === 0) return;
+
+  const batch = logBuffer.splice(0, MAX_BATCH_SIZE);
+
+  try {
+    await fetch(getLogEndpoint(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ logs: batch }),
+      keepalive: true,
+    });
+  } catch {
+    // If shipping fails, don't lose logs — re-queue up to limit
+    if (logBuffer.length < MAX_BATCH_SIZE * 2) {
+      logBuffer.unshift(...batch);
+    }
+  }
+
+  // If there are still logs buffered, schedule another flush
+  if (logBuffer.length > 0) {
+    scheduleFlush();
+  }
+}
+
+// Flush remaining logs on page unload via Beacon API
+if (typeof window !== 'undefined') {
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && logBuffer.length > 0) {
+      const batch = logBuffer.splice(0, MAX_BATCH_SIZE);
+      const blob = new Blob([JSON.stringify({ logs: batch })], { type: 'application/json' });
+      navigator.sendBeacon(getLogEndpoint(), blob);
+    }
+  });
+}
+
+// --- Sanitization ---
 
 function sanitizeValue(value: unknown): unknown {
   if (typeof value === 'string' && value.length > MAX_STRING_LENGTH) {
@@ -68,6 +125,8 @@ function shouldLog(level: LogLevel): boolean {
   return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[configuredLevel];
 }
 
+// --- Core log function ---
+
 function log(level: LogLevel, component: string, action: string, metadata?: Record<string, unknown>) {
   if (!shouldLog(level)) return;
 
@@ -84,8 +143,8 @@ function log(level: LogLevel, component: string, action: string, metadata?: Reco
     entry.metadata = sanitizeMetadata(metadata);
   }
 
+  // Always write to browser console for dev visibility
   const json = safeStringify(entry);
-
   switch (level) {
     case 'error':
       console.error(json);
@@ -95,6 +154,14 @@ function log(level: LogLevel, component: string, action: string, metadata?: Reco
       break;
     default:
       console.log(json);
+  }
+
+  // Buffer for shipping to backend → container stdout → FluentBit → Loki
+  logBuffer.push(entry);
+  if (logBuffer.length >= MAX_BATCH_SIZE) {
+    void flushLogs();
+  } else {
+    scheduleFlush();
   }
 }
 
@@ -107,4 +174,5 @@ export const logger = {
     log('warn', component, action, metadata),
   error: (component: string, action: string, metadata?: Record<string, unknown>) =>
     log('error', component, action, metadata),
+  flush: flushLogs,
 };

@@ -134,6 +134,41 @@ app.post('/api/loop', async (req, res) => {
   }
 });
 
+// Ingest frontend logs and write to stdout for FluentBit/Promtail
+const VALID_LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);
+const MAX_BATCH_SIZE = 50;
+const MAX_LOG_ENTRY_SIZE = 4096;
+
+app.post('/api/logs', (req, res) => {
+  const { logs } = req.body;
+
+  if (!Array.isArray(logs) || logs.length === 0) {
+    return res.status(400).json({ error: 'logs array required' });
+  }
+
+  const batch = logs.slice(0, MAX_BATCH_SIZE);
+
+  for (const entry of batch) {
+    if (!entry || typeof entry !== 'object') continue;
+    if (!VALID_LOG_LEVELS.has(entry.level)) continue;
+
+    // Stamp server-side metadata
+    const logLine = {
+      ...entry,
+      source: 'frontend',
+      serverTimestamp: new Date().toISOString(),
+    };
+
+    const json = JSON.stringify(logLine);
+    if (json.length > MAX_LOG_ENTRY_SIZE) continue;
+
+    // Write to stdout — FluentBit/Promtail scrapes container stdout
+    process.stdout.write(json + '\n');
+  }
+
+  res.status(204).end();
+});
+
 // SPA fallback - serve index.html for all non-API routes
 // MUST come after API routes and static middleware
 // Only serve index.html for routes that don't look like files (no extension)
