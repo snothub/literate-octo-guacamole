@@ -45,7 +45,7 @@ COPY backend/index.js ./
 # Copy frontend build
 COPY --from=frontend-builder /app/dist ./public
 
-# Fix permissions for non-root nginx
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 RUN chown -R appuser:appgroup /app/public && \
     chown -R appuser:appgroup /app/index.js
     
