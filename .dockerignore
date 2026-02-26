@@ -5,6 +5,15 @@ dist
 *.md
 .git
 .github
-backend
 kubernetes
 private
+.gitignore
+README.md
+*.log
+.vscode
+.idea
+*.md
+coverage
+.DS_Store
+backend/node_modules
+backend/dist
