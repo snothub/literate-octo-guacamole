@@ -45,9 +45,10 @@ COPY backend/index.js ./
 # Copy frontend build
 COPY --from=frontend-builder /app/dist ./public
 
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
-RUN chown -R appuser:appgroup /app/public && \
-    chown -R appuser:appgroup /app/index.js
+RUN appuser -ms /bin/bash appuser
+
+RUN chown -R appuser:appuser /app/public && \
+    chown -R appuser:appuser /app/index.js
     
 USER appuser
 
