@@ -44,8 +44,7 @@ COPY backend/index.js ./
 
 # Copy frontend build
 COPY --from=frontend-builder /app/dist ./public
-RUN groupadd --gid 1000 appgroup && \
-    useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
+RUN addgroup appgroup && adduser -D appuser -G appgroup
 
 RUN chown -R appuser:appgroup /app/public && \
     chown -R appuser:appgroup /app/index.js
