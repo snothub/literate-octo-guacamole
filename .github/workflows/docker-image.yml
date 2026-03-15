@@ -58,6 +58,11 @@ jobs:
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:${{ env.VERSION }}
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/music-man:latest
 
+    - name: Setup SSH for Helm repo
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.HELM_DEPLOY_KEY }}
+
     # Update Git repository with new version (only for releases)
     - name: Update ArgoCD application manifests
       if: env.IS_RELEASE == 'true'
