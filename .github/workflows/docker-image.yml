@@ -67,7 +67,7 @@ jobs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
         # Checkout main branch (we're in detached HEAD when triggered by tag)
-        git clone https://x-access-token:${{ secrets.MM_TOKEN }}@github.com/snothub/scaling-parakeet.git infra
+        git clone https://x-access-token:${{ secrets.MM_TOKEN }}@github.com/snothub/super-potato.git infra
         cd infra
         git fetch origin main
         git checkout main
@@ -75,10 +75,7 @@ jobs:
         echo "Handling version ${{ env.VERSION }}"
 
         # Update dev environment
-        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" helm-chart/values-prod.yaml
-
-        # Update prod environment
-        # sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" argocd/application-prod.yaml
+        sed -i "s|tag: v[0-9]*\.[0-9]*\.[0-9]*|tag: ${{ env.VERSION }}|g" musicman/values.yaml
 
         # Check if there are changes
         if git diff --quiet; then
@@ -88,9 +85,9 @@ jobs:
 
         # Show what changed
         echo "Changes to be committed:"
-        git diff helm-chart/
+        git diff musicman/
 
         # Commit and push
-        git add helm-chart/values-prod.yaml
+        git add musicman/values.yaml
         git commit -m "chore: update image versions to ${{ env.VERSION }}"
         git push origin main
