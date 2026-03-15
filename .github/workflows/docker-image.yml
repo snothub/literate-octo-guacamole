@@ -67,8 +67,8 @@ jobs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
         # Checkout main branch (we're in detached HEAD when triggered by tag)
-        git clone https://x-access-token:${{ secrets.MM_TOKEN }}@github.com/snothub/super-potato.git infra
-        cd infra
+        git clone git@github.com:snothub/super-potato.git helm
+        cd helm
         git fetch origin main
         git checkout main
 
