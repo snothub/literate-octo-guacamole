@@ -196,7 +196,7 @@ async function main() {
   try {
     // Run migrations
     const { execSync } = require('child_process');
-    console.log('Running database migrations...');
+    console.log('Running database migrations with connection string:', process.env.DATABASE_URL);
     execSync('npx prisma migrate deploy', { stdio: 'inherit' });
     console.log('✓ Migrations complete');
 

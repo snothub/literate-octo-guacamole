@@ -18,7 +18,12 @@
       "Bash(kubectl get:*)",
       "Bash(dir /b C:devhackathon)",
       "Bash(npx prisma validate:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(dir:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet add package:*)"
     ]
   }
 }
